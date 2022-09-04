@@ -28,7 +28,7 @@ public class ToyScriptEngineFactory implements ScriptEngineFactory {
 
     @Override
     public List<String> getNames() {
-        return List.of("toyscript", "toys");
+        return List.of("ToyScript", "toyscript", "toys");
     }
 
     @Override

@@ -1,13 +1,12 @@
 package lang.toyscript.engine;
 
+import lang.toyscript.engine.exception.UncheckedScriptException;
 import lang.toyscript.engine.runtime.ToyScriptProgram;
 import lang.toyscript.parser.ToyScriptLexer;
 import lang.toyscript.parser.ToyScriptParser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import javax.script.Bindings;
 import javax.script.Compilable;
@@ -114,7 +113,9 @@ public class ToyScriptEngine implements ScriptEngine, Compilable {
         try {
             var input = CharStreams.fromString(script);
             return doCompile(input);
-        } catch (ParseCancellationException | RecognitionException e) {
+        } catch (UncheckedScriptException e) {
+            throw e.checked();
+        } catch (RuntimeException e) {
             throw new ScriptException(e);
         }
     }
@@ -124,7 +125,9 @@ public class ToyScriptEngine implements ScriptEngine, Compilable {
         try {
             var input = CharStreams.fromReader(reader);
             return doCompile(input);
-        } catch (IOException | ParseCancellationException | RecognitionException e) {
+        } catch (UncheckedScriptException e) {
+            throw e.checked();
+        } catch (IOException | RuntimeException e) {
             throw new ScriptException(e);
         }
     }
@@ -132,15 +135,17 @@ public class ToyScriptEngine implements ScriptEngine, Compilable {
     private ToyScriptProgram doCompile(CharStream input) {
 
         // custom error listener
-        var errorListener = new ParseErrorListener(context.getErrorWriter());
+        var errorListener = new ParseErrorListener();
 
         //  parse tokens
         var lexer = new ToyScriptLexer(input);
+        lexer.removeErrorListeners();
         lexer.addErrorListener(errorListener);
         var tokenStream = new CommonTokenStream(lexer);
 
         // create AST
         var parser = new ToyScriptParser(tokenStream);
+        parser.removeErrorListeners();
         parser.addErrorListener(errorListener);
         var tree = parser.program();
 

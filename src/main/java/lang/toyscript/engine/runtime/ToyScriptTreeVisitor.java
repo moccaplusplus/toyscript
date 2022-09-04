@@ -1,13 +1,18 @@
 package lang.toyscript.engine.runtime;
 
-import lang.toyscript.engine.runtime.scope.ScopeManager;
-import lang.toyscript.parser.ToyScriptBaseVisitor;
+import lang.toyscript.engine.exception.UncheckedScriptException;
+import lang.toyscript.engine.runtime.scope.ScopedRegister;
+import lang.toyscript.engine.runtime.scope.Register;
 import lang.toyscript.parser.ToyScriptLexer;
 import lang.toyscript.parser.ToyScriptParser;
+import lang.toyscript.parser.ToyScriptVisitor;
+import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
+import javax.script.ScriptContext;
 import java.util.Stack;
 
 import static lang.toyscript.engine.runtime.TypeUtils.boolCast;
+import static lang.toyscript.engine.runtime.TypeUtils.unaryMin;
 import static lang.toyscript.engine.runtime.TypeUtils.numberAdd;
 import static lang.toyscript.engine.runtime.TypeUtils.numberCast;
 import static lang.toyscript.engine.runtime.TypeUtils.numberDiv;
@@ -18,35 +23,45 @@ import static lang.toyscript.engine.runtime.TypeUtils.numberMod;
 import static lang.toyscript.engine.runtime.TypeUtils.numberMul;
 import static lang.toyscript.engine.runtime.TypeUtils.numberSub;
 
-public class ToyScriptProgramVisitor extends ToyScriptBaseVisitor<Void> {
-
-    private final ScopeManager scopeManager;
+public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> implements ToyScriptVisitor<Void> {
 
     private final Stack<Object> stack = new Stack<>();
 
-    public ToyScriptProgramVisitor(ScopeManager scopeManager) {
-        this.scopeManager = scopeManager;
+    private final Register register;
+
+    public ToyScriptTreeVisitor(ScriptContext scriptContext) {
+        register = new ScopedRegister(scriptContext);
+    }
+
+    @Override
+    public Void visitProgram(ToyScriptParser.ProgramContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    @Override
+    public Void visitStatement(ToyScriptParser.StatementContext ctx) {
+        return visitChildren(ctx);
     }
 
     @Override
     public Void visitVarDecl(ToyScriptParser.VarDeclContext ctx) {
-        var identifier = ctx.ID().getText();
-        scopeManager.declare(identifier);
+        var identifier = ctx.ID();
+        register.declare(identifier);
         if (ctx.expr() != null) {
             visit(ctx.expr());
             var value = stack.pop();
-            scopeManager.setValue(identifier, value);
+            register.assign(identifier, value, register.getCurrentScope());
         }
         return null;
     }
 
     @Override
     public Void visitBlockStatement(ToyScriptParser.BlockStatementContext ctx) {
-        scopeManager.enterScope();
+        register.enterScope();
         for (var statement : ctx.statement()) {
             visit(statement);
         }
-        scopeManager.exitScope();
+        register.exitScope();
         return null;
     }
 
@@ -80,74 +95,6 @@ public class ToyScriptProgramVisitor extends ToyScriptBaseVisitor<Void> {
     }
 
     @Override
-    public Void visitNullLiteralExpr(ToyScriptParser.NullLiteralExprContext ctx) {
-        stack.push(null);
-        return null;
-    }
-
-    @Override
-    public Void visitIntLiteralExpr(ToyScriptParser.IntLiteralExprContext ctx) {
-        var value = Integer.valueOf(ctx.INT().getText());
-        stack.push(value);
-        return null;
-    }
-
-    @Override
-    public Void visitArithmeticExpr(ToyScriptParser.ArithmeticExprContext ctx) {
-        visit(ctx.expr(0));
-        visit(ctx.expr(1));
-        var value1 = stack.pop();
-        var value0 = stack.pop();
-        var num0 = numberCast(value0);
-        var num1 = numberCast(value1);
-        var result = switch (ctx.op.getType()) {
-            case ToyScriptLexer.ADD -> numberAdd(num0, num1);
-            case ToyScriptLexer.SUB -> numberSub(num0, num1);
-            case ToyScriptLexer.MUL -> numberMul(num0, num1);
-            case ToyScriptLexer.DIV -> numberDiv(num0, num1);
-            case ToyScriptLexer.MOD -> numberMod(num0, num1);
-            default -> throw new IllegalStateException("Unexpected OP token: " + ctx.op.getText());
-        };
-        stack.push(result);
-        return null;
-    }
-
-    @Override
-    public Void visitCompareExpr(ToyScriptParser.CompareExprContext ctx) {
-        visit(ctx.expr(0));
-        visit(ctx.expr(1));
-        var value1 = stack.pop();
-        var value0 = stack.pop();
-        var num0 = numberCast(value0);
-        var num1 = numberCast(value1);
-        var result = switch (ctx.op.getType()) {
-            case ToyScriptLexer.EQ -> numberEquals(num0, num1);
-            case ToyScriptLexer.NEQ -> !numberEquals(num0, num1);
-            case ToyScriptLexer.LT -> numberLessThen(num0, num1);
-            case ToyScriptLexer.GT -> numberGreaterThen(num0, num1);
-            case ToyScriptLexer.LTE -> !numberGreaterThen(num0, num1);
-            case ToyScriptLexer.GTE -> !numberLessThen(num0, num1);
-            default -> throw new IllegalStateException("Unexpected OP token: " + ctx.op.getText());
-        };
-        stack.push(result);
-        return null;
-    }
-
-    @Override
-    public Void visitBooleanLiteralExpr(ToyScriptParser.BooleanLiteralExprContext ctx) {
-        var value = Boolean.valueOf(ctx.BOOL().getText());
-        stack.push(value);
-        return null;
-    }
-
-    @Override
-    public Void visitFloatLiteralExpr(ToyScriptParser.FloatLiteralExprContext ctx) {
-        var value = Float.valueOf(ctx.FLOAT().getText());
-        stack.push(value);
-        return null;
-    }
-
-    @Override
     public Void visitStringLiteralExpr(ToyScriptParser.StringLiteralExprContext ctx) {
         var value = ctx.STRING().getText();
         stack.push(value);
@@ -170,9 +117,115 @@ public class ToyScriptProgramVisitor extends ToyScriptBaseVisitor<Void> {
     }
 
     @Override
+    public Void visitAssignExpr(ToyScriptParser.AssignExprContext ctx) {
+        var identifier = ctx.ID();
+        var scope = register.getDeclaringScope(identifier);
+        visit(ctx.expr());
+        var value = stack.pop();
+        register.assign(identifier, value, scope);
+        return null;
+    }
+
+    @Override
+    public Void visitIncrDecrExpr(ToyScriptParser.IncrDecrExprContext ctx) {
+        var identifier = ctx.ID();
+        var scope = register.getDeclaringScope(identifier);
+        var value = register.read(identifier, scope);
+        stack.push(value);
+        var seed = switch (ctx.op.getType())  {
+            case ToyScriptLexer.INCR -> 1;
+            case ToyScriptLexer.DECR -> -1;
+            default -> throw new UncheckedScriptException("Unexpected token: " + ctx.op.getText(), ctx.op);
+        };
+        register.assign(identifier, numberCast(value).intValue() + seed, scope);
+        return null;
+    }
+
+    @Override
+    public Void visitNullLiteralExpr(ToyScriptParser.NullLiteralExprContext ctx) {
+        stack.push(null);
+        return null;
+    }
+
+    @Override
+    public Void visitIntLiteralExpr(ToyScriptParser.IntLiteralExprContext ctx) {
+        var value = Integer.valueOf(ctx.INT().getText());
+        stack.push(value);
+        return null;
+    }
+
+    @Override
+    public Void visitMulDivModExpr(ToyScriptParser.MulDivModExprContext ctx) {
+        visit(ctx.expr(0));
+        visit(ctx.expr(1));
+        var value1 = stack.pop();
+        var value0 = stack.pop();
+        var num0 = numberCast(value0);
+        var num1 = numberCast(value1);
+        var result = switch (ctx.op.getType()) {
+            case ToyScriptLexer.MUL -> numberMul(num0, num1);
+            case ToyScriptLexer.DIV -> numberDiv(num0, num1);
+            case ToyScriptLexer.MOD -> numberMod(num0, num1);
+            default -> throw new UncheckedScriptException("Unexpected token: " + ctx.op.getText(), ctx.op);
+        };
+        stack.push(result);
+        return null;
+    }
+
+    @Override
+    public Void visitCompareExpr(ToyScriptParser.CompareExprContext ctx) {
+        visit(ctx.expr(0));
+        visit(ctx.expr(1));
+        var value1 = stack.pop();
+        var value0 = stack.pop();
+        var num0 = numberCast(value0);
+        var num1 = numberCast(value1);
+        var result = switch (ctx.op.getType()) {
+            case ToyScriptLexer.LT -> numberLessThen(num0, num1);
+            case ToyScriptLexer.GT -> numberGreaterThen(num0, num1);
+            case ToyScriptLexer.LTE -> !numberGreaterThen(num0, num1);
+            case ToyScriptLexer.GTE -> !numberLessThen(num0, num1);
+            default -> throw new UncheckedScriptException("Unexpected token: " + ctx.op.getText(), ctx.op);
+        };
+        stack.push(result);
+        return null;
+    }
+
+    @Override
+    public Void visitBooleanLiteralExpr(ToyScriptParser.BooleanLiteralExprContext ctx) {
+        var value = Boolean.valueOf(ctx.BOOL().getText());
+        stack.push(value);
+        return null;
+    }
+
+    @Override
+    public Void visitFloatLiteralExpr(ToyScriptParser.FloatLiteralExprContext ctx) {
+        var value = Float.valueOf(ctx.FLOAT().getText());
+        stack.push(value);
+        return null;
+    }
+
+    @Override
+    public Void visitEqualCheckExpr(ToyScriptParser.EqualCheckExprContext ctx) {
+        visit(ctx.expr(0));
+        visit(ctx.expr(1));
+        var value1 = stack.pop();
+        var value0 = stack.pop();
+        var num0 = numberCast(value0);
+        var num1 = numberCast(value1);
+        var result = switch (ctx.op.getType()) {
+            case ToyScriptLexer.EQ -> numberEquals(num0, num1);
+            case ToyScriptLexer.NEQ -> !numberEquals(num0, num1);
+            default -> throw new UncheckedScriptException("Unexpected token: " + ctx.op.getText(), ctx.op);
+        };
+        stack.push(result);
+        return null;
+    }
+
+    @Override
     public Void visitVarExpr(ToyScriptParser.VarExprContext ctx) {
-        var identifier = ctx.ID().getText();
-        var value = scopeManager.getValue(identifier);
+        var identifier = ctx.ID();
+        var value = register.read(identifier);
         stack.push(value);
         return null;
     }
@@ -180,6 +233,32 @@ public class ToyScriptProgramVisitor extends ToyScriptBaseVisitor<Void> {
     @Override
     public Void visitNestedExpr(ToyScriptParser.NestedExprContext ctx) {
         visit(ctx.expr());
+        return null;
+    }
+
+    @Override
+    public Void visitAddSubExpr(ToyScriptParser.AddSubExprContext ctx) {
+        visit(ctx.expr(0));
+        visit(ctx.expr(1));
+        var value1 = stack.pop();
+        var value0 = stack.pop();
+        var num0 = numberCast(value0);
+        var num1 = numberCast(value1);
+        var result = switch (ctx.op.getType()) {
+            case ToyScriptLexer.PLUS -> numberAdd(num0, num1);
+            case ToyScriptLexer.MINUS -> numberSub(num0, num1);
+            default -> throw new UncheckedScriptException("Unexpected token: " + ctx.op.getText(), ctx.op);
+        };
+        stack.push(result);
+        return null;
+    }
+
+    @Override
+    public Void visitUnaryMinusExpr(ToyScriptParser.UnaryMinusExprContext ctx) {
+        visit(ctx.expr());
+        var value = stack.pop();
+        var result = unaryMin(numberCast(value));
+        stack.push(result);
         return null;
     }
 
@@ -192,17 +271,7 @@ public class ToyScriptProgramVisitor extends ToyScriptBaseVisitor<Void> {
         return null;
     }
 
-    @Override
-    public Void visitAssignExpr(ToyScriptParser.AssignExprContext ctx) {
-        var identifier = ctx.ID().getText();
-        var scope = scopeManager.getDeclaringScope(identifier);
-        visit(ctx.expr());
-        var value = stack.pop();
-        scopeManager.setValue(identifier, value, scope);
-        return null;
-    }
-
-    public Object getValue() {
+    public Object getResult() {
         return stack.isEmpty() ? null : stack.pop();
     }
 }

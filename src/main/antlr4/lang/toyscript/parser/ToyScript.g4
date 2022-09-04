@@ -11,27 +11,31 @@ ifStatement: IF PAREN_LEFT expr PAREN_RIGHT statement (ELSE statement)?;
 whileStatement: WHILE PAREN_LEFT expr PAREN_RIGHT statement;
 
 statement:
-        blockStatement
+        varDecl
     |   ifStatement
     |   whileStatement
-    |   varDecl
+    |   blockStatement
     |   expr END
     |   END
     ;
 
 expr:
-        expr op=( ADD | SUB | MUL | DIV | MOD ) expr        # ArithmeticExpr
-    |   expr op=( EQ | NEQ | LT | LTE | GT | GTE ) expr     # CompareExpr
-    |   expr op=( AND | OR ) expr                           # AndOrExpr
+        MINUS expr                                          # UnaryMinusExpr
     |   NOT expr                                            # NegationExpr
-    |   ID ASSIGN expr                                      # AssignExpr
+    |   ID op=( INCR | DECR )                               # IncrDecrExpr
+    |   expr op=( MUL | DIV | MOD ) expr                    # MulDivModExpr
+    |   expr op=( PLUS | MINUS ) expr                       # AddSubExpr
+    |   expr op=( LT | LTE | GT | GTE ) expr                # CompareExpr
+    |   expr op=( EQ | NEQ ) expr                           # EqualCheckExpr
+    |   expr op=( AND | OR ) expr                           # AndOrExpr
     |   BOOL                                                # BooleanLiteralExpr
-    |   INT                                                 # IntLiteralExpr
     |   FLOAT                                               # FloatLiteralExpr
+    |   INT                                                 # IntLiteralExpr
     |   STRING                                              # StringLiteralExpr
     |   NULL                                                # NullLiteralExpr
     |   ID                                                  # VarExpr
     |   PAREN_LEFT expr PAREN_RIGHT                         # NestedExpr
+    |   ID ASSIGN expr                                      # AssignExpr
     ;
 
 VAR: 'var';
@@ -46,10 +50,12 @@ CURLY_LEFT: '{';
 CURLY_RIGHT: '}';
 ASSIGN: '=';
 
+INCR: '++';
+DECR: '--';
 MUL: '*';
 DIV: '/';
-ADD: '+';
-SUB: '-';
+PLUS: '+';
+MINUS: '-';
 MOD: '%';
 
 EQ: '==';
