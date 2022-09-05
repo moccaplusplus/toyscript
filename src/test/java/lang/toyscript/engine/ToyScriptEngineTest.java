@@ -69,4 +69,22 @@ public class ToyScriptEngineTest {
         assertThat(y).isEqualTo(20);
         assertThat(z).isEqualTo(-10);
     }
+
+    @Test
+    public void shouldTestArrays() throws ScriptException {
+        // given
+        var expression = "var x = array { 1, \"Two\", 3 }; var y = array[3]; var i = 0; while(i < 3) { y[i] = x[i]; i++; }";
+
+        // when
+        objectUnderTest.eval(expression);
+        var engineScope = objectUnderTest.getBindings(ScriptContext.ENGINE_SCOPE);
+        var x = engineScope.get("x");
+        var y = engineScope.get("y");
+
+        // then
+        assertThat(x).isInstanceOf(Object[].class);
+        assertThat(y).isInstanceOf(Object[].class);
+        assertThat(y).isEqualTo(x);
+        assertThat((Object[]) x).containsExactly(1, "Two", 3);
+    }
 }

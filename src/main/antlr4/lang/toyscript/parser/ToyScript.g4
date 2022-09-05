@@ -4,11 +4,11 @@ program: statement+ EOF;
 
 varDecl: VAR ID (ASSIGN expr)? END;
 
-blockStatement: CURLY_LEFT statement* CURLY_RIGHT;
+blockStatement: CURLY_L statement* CURLY_R;
 
-ifStatement: IF PAREN_LEFT expr PAREN_RIGHT statement (ELSE statement)?;
+ifStatement: IF PAREN_L expr PAREN_R statement (ELSE statement)?;
 
-whileStatement: WHILE PAREN_LEFT expr PAREN_RIGHT statement;
+whileStatement: WHILE PAREN_L expr PAREN_R statement;
 
 statement:
         varDecl
@@ -28,26 +28,38 @@ expr:
     |   expr op=( LT | LTE | GT | GTE ) expr                # CompareExpr
     |   expr op=( EQ | NEQ ) expr                           # EqualCheckExpr
     |   expr op=( AND | OR ) expr                           # AndOrExpr
+    |   ARRAY CURLY_L exprSeq? CURLY_R                      # ArrayInitExpr
+    |   ARRAY INDEX_L expr INDEX_R                          # ArrayDefExpr
+    |   expr INDEX_L expr INDEX_R                           # IndexAccessExpr
+    |   expr INDEX_L expr INDEX_R ASSIGN expr               # IndexAssignExpr
     |   BOOL                                                # BooleanLiteralExpr
     |   FLOAT                                               # FloatLiteralExpr
     |   INT                                                 # IntLiteralExpr
     |   STRING                                              # StringLiteralExpr
     |   NULL                                                # NullLiteralExpr
     |   ID                                                  # VarExpr
-    |   PAREN_LEFT expr PAREN_RIGHT                         # NestedExpr
+    |   PAREN_L expr PAREN_R                                # NestedExpr
     |   ID ASSIGN expr                                      # AssignExpr
     ;
 
+exprSeq: ( expr (COMMA expr)* );
+
 VAR: 'var';
+ARRAY: 'array';
+STRUCT: 'struct';
+FUNCTION: 'function';
 IF: 'if';
 ELSE: 'else';
 WHILE: 'while';
 
 END: ';';
-PAREN_LEFT: '(';
-PAREN_RIGHT: ')';
-CURLY_LEFT: '{';
-CURLY_RIGHT: '}';
+COMMA: ',';
+PAREN_L: '(';
+PAREN_R: ')';
+CURLY_L: '{';
+CURLY_R: '}';
+INDEX_L: '[';
+INDEX_R: ']';
 ASSIGN: '=';
 
 INCR: '++';

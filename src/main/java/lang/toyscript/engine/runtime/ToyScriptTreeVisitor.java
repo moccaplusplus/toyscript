@@ -1,8 +1,8 @@
 package lang.toyscript.engine.runtime;
 
 import lang.toyscript.engine.exception.UncheckedScriptException;
-import lang.toyscript.engine.runtime.scope.ScopedRegister;
 import lang.toyscript.engine.runtime.scope.Register;
+import lang.toyscript.engine.runtime.scope.ScopedRegister;
 import lang.toyscript.parser.ToyScriptLexer;
 import lang.toyscript.parser.ToyScriptParser;
 import lang.toyscript.parser.ToyScriptVisitor;
@@ -12,7 +12,6 @@ import javax.script.ScriptContext;
 import java.util.Stack;
 
 import static lang.toyscript.engine.runtime.TypeUtils.boolCast;
-import static lang.toyscript.engine.runtime.TypeUtils.unaryMin;
 import static lang.toyscript.engine.runtime.TypeUtils.numberAdd;
 import static lang.toyscript.engine.runtime.TypeUtils.numberCast;
 import static lang.toyscript.engine.runtime.TypeUtils.numberDiv;
@@ -22,6 +21,7 @@ import static lang.toyscript.engine.runtime.TypeUtils.numberLessThen;
 import static lang.toyscript.engine.runtime.TypeUtils.numberMod;
 import static lang.toyscript.engine.runtime.TypeUtils.numberMul;
 import static lang.toyscript.engine.runtime.TypeUtils.numberSub;
+import static lang.toyscript.engine.runtime.TypeUtils.unaryMin;
 
 public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> implements ToyScriptVisitor<Void> {
 
@@ -41,6 +41,55 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
     @Override
     public Void visitStatement(ToyScriptParser.StatementContext ctx) {
         return visitChildren(ctx);
+    }
+
+    @Override
+    public Void visitArrayDefExpr(ToyScriptParser.ArrayDefExprContext ctx) {
+        visit(ctx.expr());
+        var size = numberCast(stack.pop()).intValue();
+        var value = new Object[size];
+        stack.push(value);
+        return null;
+    }
+
+    @Override
+    public Void visitIndexAccessExpr(ToyScriptParser.IndexAccessExprContext ctx) {
+        visit(ctx.expr(0));
+        var target = stack.pop();
+        if (target instanceof Object[] arr) {
+            visit(ctx.expr(1));
+            var index = numberCast(stack.pop()).intValue();
+            var value = arr[index];
+            stack.push(value);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitIndexAssignExpr(ToyScriptParser.IndexAssignExprContext ctx) {
+        visit(ctx.expr(0));
+        var target = stack.pop();
+        if (target instanceof Object[] arr) {
+            visit(ctx.expr(1));
+            var index = numberCast(stack.pop()).intValue();
+            visit(ctx.expr(2));
+            var value = stack.pop();
+            arr[index] = value;
+            stack.push(value);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitArrayInitExpr(ToyScriptParser.ArrayInitExprContext ctx) {
+        visit(ctx.exprSeq());
+        var size = (Integer) stack.pop();
+        var value = new Object[size];
+        while (size-- > 0) {
+            value[size] = stack.pop();
+        }
+        stack.push(value);
+        return null;
     }
 
     @Override
@@ -97,7 +146,7 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
     @Override
     public Void visitStringLiteralExpr(ToyScriptParser.StringLiteralExprContext ctx) {
         var value = ctx.STRING().getText();
-        stack.push(value);
+        stack.push(value.substring(1, value.length() - 1));
         return null;
     }
 
@@ -132,7 +181,7 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
         var scope = register.getDeclaringScope(identifier);
         var value = register.read(identifier, scope);
         stack.push(value);
-        var seed = switch (ctx.op.getType())  {
+        var seed = switch (ctx.op.getType()) {
             case ToyScriptLexer.INCR -> 1;
             case ToyScriptLexer.DECR -> -1;
             default -> throw new UncheckedScriptException("Unexpected token: " + ctx.op.getText(), ctx.op);
@@ -268,6 +317,15 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
         var value = stack.pop();
         var negated = !boolCast(value);
         stack.push(negated);
+        return null;
+    }
+
+    @Override
+    public Void visitExprSeq(ToyScriptParser.ExprSeqContext ctx) {
+        for (var expr : ctx.expr()) {
+            visit(expr);
+        }
+        stack.push(ctx.expr().size());
         return null;
     }
 
