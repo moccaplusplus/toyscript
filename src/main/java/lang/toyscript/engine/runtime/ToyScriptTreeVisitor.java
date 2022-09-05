@@ -9,9 +9,14 @@ import lang.toyscript.parser.ToyScriptVisitor;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 import javax.script.ScriptContext;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Stack;
 
 import static lang.toyscript.engine.runtime.TypeUtils.boolCast;
+import static lang.toyscript.engine.runtime.TypeUtils.ensureArray;
+import static lang.toyscript.engine.runtime.TypeUtils.ensureStruct;
 import static lang.toyscript.engine.runtime.TypeUtils.numberAdd;
 import static lang.toyscript.engine.runtime.TypeUtils.numberCast;
 import static lang.toyscript.engine.runtime.TypeUtils.numberDiv;
@@ -47,46 +52,95 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
     public Void visitArrayDefExpr(ToyScriptParser.ArrayDefExprContext ctx) {
         visit(ctx.expr());
         var size = numberCast(stack.pop()).intValue();
-        var value = new Object[size];
+        var value = new ArrayList<>(Arrays.asList(new Object[size]));
         stack.push(value);
         return null;
     }
 
     @Override
     public Void visitIndexAccessExpr(ToyScriptParser.IndexAccessExprContext ctx) {
-        visit(ctx.expr(0));
-        var target = stack.pop();
-        if (target instanceof Object[] arr) {
-            visit(ctx.expr(1));
-            var index = numberCast(stack.pop()).intValue();
-            var value = arr[index];
-            stack.push(value);
+        var arrExpr = ctx.expr(0);
+        var indExpr = ctx.expr(1);
+        visit(arrExpr);
+        var arr = ensureArray(stack.pop(), arrExpr.start);
+        visit(indExpr);
+        var index = numberCast(stack.pop()).intValue();
+        if (index < 0 || index >= arr.size()) {
+            throw new UncheckedScriptException("Index: " + index + " is out of bounds", ctx.INDEX_L().getSymbol());
         }
+        var value = arr.get(index);
+        stack.push(value);
         return null;
     }
 
     @Override
     public Void visitIndexAssignExpr(ToyScriptParser.IndexAssignExprContext ctx) {
-        visit(ctx.expr(0));
-        var target = stack.pop();
-        if (target instanceof Object[] arr) {
-            visit(ctx.expr(1));
-            var index = numberCast(stack.pop()).intValue();
-            visit(ctx.expr(2));
-            var value = stack.pop();
-            arr[index] = value;
-            stack.push(value);
+        var arrExpr = ctx.expr(0);
+        var indExpr = ctx.expr(1);
+        var valExpr = ctx.expr(2);
+        visit(arrExpr);
+        var arr = ensureArray(stack.pop(), arrExpr.start);
+        visit(indExpr);
+        var index = numberCast(stack.pop()).intValue();
+        if (index < 0 || index >= arr.size()) {
+            throw new UncheckedScriptException("Index: " + index + " is out of bounds", ctx.INDEX_L().getSymbol());
         }
+        visit(valExpr);
+        var value = stack.pop();
+        arr.set(index, value);
+        stack.push(value);
+        return null;
+    }
+
+    @Override
+    public Void visitMemberAccessExpr(ToyScriptParser.MemberAccessExprContext ctx) {
+        var mapExpr = ctx.expr();
+        visit(mapExpr);
+        var map = ensureStruct(stack.pop(), mapExpr.start);
+        var key = ctx.ID().getText();
+        if (!map.containsKey(key)) {
+            throw new UncheckedScriptException("Member: " + key + " not found", ctx.DOT().getSymbol());
+        }
+        var value = map.get(key);
+        stack.push(value);
+        return null;
+    }
+
+    @Override
+    public Void visitMemberAssignExpr(ToyScriptParser.MemberAssignExprContext ctx) {
+        var mapExpr = ctx.expr(0);
+        var valExpr = ctx.expr(1);
+        visit(mapExpr);
+        var map = ensureStruct(stack.pop(), mapExpr.start);
+        var key = ctx.ID().getText();
+        if (!map.containsKey(key)) {
+            throw new UncheckedScriptException("Member: " + key + " not found", ctx.DOT().getSymbol());
+        }
+        visit(valExpr);
+        var value = stack.pop();
+        map.put(key, value);
+        stack.push(value);
         return null;
     }
 
     @Override
     public Void visitArrayInitExpr(ToyScriptParser.ArrayInitExprContext ctx) {
-        visit(ctx.exprSeq());
-        var size = (Integer) stack.pop();
-        var value = new Object[size];
-        while (size-- > 0) {
-            value[size] = stack.pop();
+        var size = ctx.expr().size();
+        var value = new ArrayList<>(size);
+        for (var i = 0; i < ctx.expr().size(); i++) {
+            visit(ctx.expr(i));
+            value.add(stack.pop());
+        }
+        stack.push(value);
+        return null;
+    }
+
+    @Override
+    public Void visitStructInitExpr(ToyScriptParser.StructInitExprContext ctx) {
+        var value = new LinkedHashMap<String, Object>();
+        for (var i = 0; i < ctx.expr().size(); i++) {
+            visit(ctx.expr(i));
+            value.put(ctx.ID(i).getText(), stack.pop());
         }
         stack.push(value);
         return null;
@@ -317,15 +371,6 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
         var value = stack.pop();
         var negated = !boolCast(value);
         stack.push(negated);
-        return null;
-    }
-
-    @Override
-    public Void visitExprSeq(ToyScriptParser.ExprSeqContext ctx) {
-        for (var expr : ctx.expr()) {
-            visit(expr);
-        }
-        stack.push(ctx.expr().size());
         return null;
     }
 

@@ -14,8 +14,8 @@ statement:
         varDecl
     |   ifStatement
     |   whileStatement
-    |   blockStatement
     |   expr END
+    |   blockStatement
     |   END
     ;
 
@@ -23,15 +23,16 @@ expr:
         MINUS expr                                          # UnaryMinusExpr
     |   NOT expr                                            # NegationExpr
     |   ID op=( INCR | DECR )                               # IncrDecrExpr
+    |   expr DOT ID                                         # MemberAccessExpr
+    |   expr INDEX_L expr INDEX_R                           # IndexAccessExpr
     |   expr op=( MUL | DIV | MOD ) expr                    # MulDivModExpr
     |   expr op=( PLUS | MINUS ) expr                       # AddSubExpr
     |   expr op=( LT | LTE | GT | GTE ) expr                # CompareExpr
     |   expr op=( EQ | NEQ ) expr                           # EqualCheckExpr
     |   expr op=( AND | OR ) expr                           # AndOrExpr
-    |   ARRAY CURLY_L exprSeq? CURLY_R                      # ArrayInitExpr
+    |   STRUCT CURLY_L ( ID ASSIGN expr END )* CURLY_R      # StructInitExpr
+    |   ARRAY CURLY_L ( expr (COMMA expr)* )? CURLY_R       # ArrayInitExpr
     |   ARRAY INDEX_L expr INDEX_R                          # ArrayDefExpr
-    |   expr INDEX_L expr INDEX_R                           # IndexAccessExpr
-    |   expr INDEX_L expr INDEX_R ASSIGN expr               # IndexAssignExpr
     |   BOOL                                                # BooleanLiteralExpr
     |   FLOAT                                               # FloatLiteralExpr
     |   INT                                                 # IntLiteralExpr
@@ -39,10 +40,10 @@ expr:
     |   NULL                                                # NullLiteralExpr
     |   ID                                                  # VarExpr
     |   PAREN_L expr PAREN_R                                # NestedExpr
+    |   expr DOT ID ASSIGN expr                             # MemberAssignExpr
+    |   expr INDEX_L expr INDEX_R ASSIGN expr               # IndexAssignExpr
     |   ID ASSIGN expr                                      # AssignExpr
     ;
-
-exprSeq: ( expr (COMMA expr)* );
 
 VAR: 'var';
 ARRAY: 'array';
@@ -61,6 +62,7 @@ CURLY_R: '}';
 INDEX_L: '[';
 INDEX_R: ']';
 ASSIGN: '=';
+DOT: '.';
 
 INCR: '++';
 DECR: '--';

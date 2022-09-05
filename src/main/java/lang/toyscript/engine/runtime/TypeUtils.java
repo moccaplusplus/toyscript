@@ -1,6 +1,29 @@
 package lang.toyscript.engine.runtime;
 
+import lang.toyscript.engine.exception.UncheckedScriptException;
+import org.antlr.v4.runtime.Token;
+
+import java.util.List;
+import java.util.Map;
+
 public final class TypeUtils {
+
+    public static String ensureString(Object obj, Token pos) {
+        if (obj instanceof String s) return s;
+        throw new UncheckedScriptException("String is expected", pos);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static List<Object> ensureArray(Object obj, Token pos) {
+        if (obj instanceof List arr) return arr;
+        throw new UncheckedScriptException("Array is expected", pos);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static Map<String, Object> ensureStruct(Object obj, Token pos) {
+        if (obj instanceof Map map) return map;
+        throw new UncheckedScriptException("Struct is expected", pos);
+    }
 
     public static Number numberAdd(Number num0, Number num1) {
         if (num0 instanceof Integer && num1 instanceof Integer) return num0.intValue() + num1.intValue();
