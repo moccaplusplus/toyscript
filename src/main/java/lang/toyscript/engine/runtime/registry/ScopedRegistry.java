@@ -1,34 +1,32 @@
-package lang.toyscript.engine.runtime.scope;
+package lang.toyscript.engine.runtime.registry;
 
 import lang.toyscript.engine.exception.UncheckedScriptException;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import javax.script.ScriptContext;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 
-public class ScopedRegister implements Register {
+public class ScopedRegistry implements Registry {
 
-    private final Stack<Map<String, Object>> scopes = new Stack<>();
+    private final List<Map<String, Object>> scopes = new ArrayList<>();
 
-    private final int rootScope;
-
-    public ScopedRegister(ScriptContext scriptContext) {
-        scopes.push(scriptContext.getBindings(ScriptContext.GLOBAL_SCOPE));
-        scopes.push(scriptContext.getBindings(ScriptContext.ENGINE_SCOPE));
-        rootScope = 1;
+    public ScopedRegistry(ScriptContext scriptContext) {
+        scopes.add(scriptContext.getBindings(ScriptContext.GLOBAL_SCOPE));
+        scopes.add(scriptContext.getBindings(ScriptContext.ENGINE_SCOPE));
     }
 
     @Override
-    public void declare(TerminalNode id) {
+    public void declare(TerminalNode id, Object value) {
         var bindings = scopes.get(getCurrentScope());
         var name = id.getText();
         if (bindings.containsKey(name)) {
             throw new UncheckedScriptException(
                     "Identifier: " + name + " already declared in current scope", id.getSymbol());
         }
-        bindings.put(name, null);
+        bindings.put(name, value);
     }
 
     @Override
@@ -60,14 +58,25 @@ public class ScopedRegister implements Register {
 
     @Override
     public void enterScope() {
-        scopes.push(new HashMap<>());
+        scopes.add(new HashMap<>());
     }
 
     @Override
     public void exitScope() {
-        if (getCurrentScope() == rootScope) {
-            throw new IllegalStateException("Cannot exit the root scope");
+        var scope = getCurrentScope();
+        if (scope == 1) {
+            throw new IllegalStateException("Cannot remove root scope!");
         }
-        scopes.pop();
+        scopes.remove(scope);
+    }
+
+    @Override
+    public Detached detachScope(int scope) {
+        int count = scopes.size() - scope - 1;
+        if (count <= 0) return NO_OP_DETACHED;
+        var toDetach = scopes.subList(scope + 1, scopes.size());
+        var detached = new ArrayList<>(toDetach);
+        toDetach.clear();
+        return () -> scopes.addAll(detached);
     }
 }

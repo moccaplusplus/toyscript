@@ -1,26 +1,38 @@
 grammar ToyScript;
 
-program: statement+ EOF;
+program: statement* EOF;
 
 varDecl: VAR ID (ASSIGN expr)? END;
 
-blockStatement: CURLY_L statement* CURLY_R;
+functionDecl: FUNCTION ID PAREN_L ( ID (COMMA ID)* )? PAREN_R CURLY_L statement* CURLY_R;
 
 ifStatement: IF PAREN_L expr PAREN_R statement (ELSE statement)?;
 
 whileStatement: WHILE PAREN_L expr PAREN_R statement;
 
+loopExitClause: op=(BREAK | CONTINUE) END;
+
+returnClause: RETURN expr? END;
+
+exprStatement: expr END;
+
+blockStatement: CURLY_L statement* CURLY_R;
+
 statement:
         varDecl
+    |   functionDecl
     |   ifStatement
     |   whileStatement
-    |   expr END
+    |   exprStatement
     |   blockStatement
+    |   loopExitClause
+    |   returnClause
     |   END
     ;
 
 expr:
-        MINUS expr                                          # UnaryMinusExpr
+        PAREN_L expr PAREN_R                                # NestedExpr
+    |   MINUS expr                                          # UnaryMinusExpr
     |   NOT expr                                            # NegationExpr
     |   ID op=( INCR | DECR )                               # IncrDecrExpr
     |   expr DOT ID                                         # MemberAccessExpr
@@ -33,13 +45,13 @@ expr:
     |   STRUCT CURLY_L ( ID ASSIGN expr END )* CURLY_R      # StructInitExpr
     |   ARRAY CURLY_L ( expr (COMMA expr)* )? CURLY_R       # ArrayInitExpr
     |   ARRAY INDEX_L expr INDEX_R                          # ArrayDefExpr
+    |   ID PAREN_L ( expr (COMMA expr)* )? PAREN_R          # FunctionCallExpr
     |   BOOL                                                # BooleanLiteralExpr
     |   FLOAT                                               # FloatLiteralExpr
     |   INT                                                 # IntLiteralExpr
     |   STRING                                              # StringLiteralExpr
     |   NULL                                                # NullLiteralExpr
     |   ID                                                  # VarExpr
-    |   PAREN_L expr PAREN_R                                # NestedExpr
     |   expr DOT ID ASSIGN expr                             # MemberAssignExpr
     |   expr INDEX_L expr INDEX_R ASSIGN expr               # IndexAssignExpr
     |   ID ASSIGN expr                                      # AssignExpr
@@ -52,6 +64,9 @@ FUNCTION: 'function';
 IF: 'if';
 ELSE: 'else';
 WHILE: 'while';
+BREAK: 'break';
+CONTINUE: 'continue';
+RETURN: 'return';
 
 END: ';';
 COMMA: ',';

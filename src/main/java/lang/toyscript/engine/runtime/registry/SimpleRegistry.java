@@ -1,20 +1,20 @@
-package lang.toyscript.engine.runtime.scope;
+package lang.toyscript.engine.runtime.registry;
 
 import lang.toyscript.engine.exception.UncheckedScriptException;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import javax.script.ScriptContext;
 
-public class SimpleRegister implements Register {
+public class SimpleRegistry implements Registry {
 
     private final ScriptContext scriptContext;
 
-    public SimpleRegister(ScriptContext scriptContext) {
+    public SimpleRegistry(ScriptContext scriptContext) {
         this.scriptContext = scriptContext;
     }
 
     @Override
-    public void declare(TerminalNode id) {
+    public void declare(TerminalNode id, Object value) {
         var bindings = scriptContext.getBindings(getCurrentScope());
         var name = id.getText();
         if (bindings.containsKey(name)) {
@@ -49,13 +49,5 @@ public class SimpleRegister implements Register {
     @Override
     public int getCurrentScope() {
         return ScriptContext.ENGINE_SCOPE;
-    }
-
-    @Override
-    public void enterScope() {
-    }
-
-    @Override
-    public void exitScope() {
     }
 }
