@@ -1,0 +1,7 @@
+var x = array { 1, "Two", 3 };
+var y = array[3];
+var i = 0;
+while(i < 3) {
+    y[i] = x[i]; i++;
+}
+var z = y[0] - x[2] * -2;

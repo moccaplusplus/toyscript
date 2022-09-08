@@ -72,4 +72,9 @@ public final class TypeUtils {
         if (obj instanceof String s) return !s.isBlank();
         return true;
     }
+
+    public static String ellipsize(Object o) {
+        var s = String.valueOf(o);
+        return s.length() > 32 ? s.substring(0, 30).trim() + "..." : s;
+    }
 }

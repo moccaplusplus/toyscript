@@ -10,6 +10,10 @@ ifStatement: IF PAREN_L expr PAREN_R statement (ELSE statement)?;
 
 whileStatement: WHILE PAREN_L expr PAREN_R statement;
 
+tryStatement: TRY blockStatement CATCH (PAREN_L ID PAREN_R)? CURLY_L statement* CURLY_R;
+
+throwStatement: THROW expr? END;
+
 loopExitClause: op=(BREAK | CONTINUE) END;
 
 returnClause: RETURN expr? END;
@@ -23,10 +27,12 @@ statement:
     |   functionDecl
     |   ifStatement
     |   whileStatement
+    |   tryStatement
+    |   throwStatement
+    |   returnClause
     |   exprStatement
     |   blockStatement
     |   loopExitClause
-    |   returnClause
     |   END
     ;
 
@@ -37,6 +43,7 @@ expr:
     |   ID op=( INCR | DECR )                               # IncrDecrExpr
     |   expr DOT ID                                         # MemberAccessExpr
     |   expr INDEX_L expr INDEX_R                           # IndexAccessExpr
+    |   ID PAREN_L ( expr (COMMA expr)* )? PAREN_R          # FunctionCallExpr
     |   expr op=( MUL | DIV | MOD ) expr                    # MulDivModExpr
     |   expr op=( PLUS | MINUS ) expr                       # AddSubExpr
     |   expr op=( LT | LTE | GT | GTE ) expr                # CompareExpr
@@ -45,7 +52,6 @@ expr:
     |   STRUCT CURLY_L ( ID ASSIGN expr END )* CURLY_R      # StructInitExpr
     |   ARRAY CURLY_L ( expr (COMMA expr)* )? CURLY_R       # ArrayInitExpr
     |   ARRAY INDEX_L expr INDEX_R                          # ArrayDefExpr
-    |   ID PAREN_L ( expr (COMMA expr)* )? PAREN_R          # FunctionCallExpr
     |   BOOL                                                # BooleanLiteralExpr
     |   FLOAT                                               # FloatLiteralExpr
     |   INT                                                 # IntLiteralExpr
@@ -66,6 +72,9 @@ ELSE: 'else';
 WHILE: 'while';
 BREAK: 'break';
 CONTINUE: 'continue';
+TRY: 'try';
+CATCH: 'catch';
+THROW: 'throw';
 RETURN: 'return';
 
 END: ';';
@@ -100,15 +109,15 @@ NOT: '!';
 
 NULL: 'null';
 
+BOOL: 'true' | 'false';
+INT: [0-9]+;
+FLOAT: [0-9]+ '.' [0-9]*;
+
 ID: [a-zA-Z_][a-zA-Z0-9_]*;
 
 STRING:  '"' ( ESC_CHAR | ~('\\'|'"') )* '"';
 CHAR:'\'' ( ESC_CHAR | ~('\''|'\\') ) '\'';
 ESC_CHAR: '\\' ('b'|'t'|'n'|'f'|'r'|'"'|'\''|'\\');
-
-BOOL: 'true' | 'false';
-INT: [0-9]+;
-FLOAT: [0-9]+ '.' [0-9]*;
 
 COMMENT: ( '//' ~[\r\n]* | '/*' .*? '*/' ) -> skip;
 WS: [ \t\r\n]+ -> skip;

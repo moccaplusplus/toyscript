@@ -5,9 +5,10 @@ import org.junit.jupiter.api.Test;
 
 import javax.script.ScriptContext;
 import javax.script.ScriptException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.List;
 
-import static java.lang.String.join;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ToyScriptEngineTest {
@@ -74,15 +75,11 @@ public class ToyScriptEngineTest {
     @Test
     public void shouldTestBasicArrayExpressions() throws ScriptException {
         // given
-        var expression = join("\n",
-                "var x = array { 1, \"Two\", 3 };",
-                "var y = array[3];",
-                "var i = 0;",
-                "while(i < 3) { y[i] = x[i]; i++; }",
-                "var z = y[0] - x[2] * -2;");
+        var reader = resourceFileReader("/toys/basicArrayExpressions.toys");
+
 
         // when
-        objectUnderTest.eval(expression);
+        objectUnderTest.eval(reader);
         @SuppressWarnings("unchecked") var x = (List<Object>) objectUnderTest.get("x");
         @SuppressWarnings("unchecked") var y = (List<Object>) objectUnderTest.get("y");
         var z = (Number) objectUnderTest.get("z");
@@ -96,13 +93,10 @@ public class ToyScriptEngineTest {
     @Test
     public void shouldTestBasicStructExpressions() throws ScriptException {
         // given
-        var expression = join("\n",
-                "var x = struct { a = 1; b = struct { c = 2; }; };",
-                "var y = struct { value = (x.a + x.b.c); };",
-                "return y.value;");
+        var reader = resourceFileReader("/toys/basicStructExpressions.toys");
 
         // when
-        var result = objectUnderTest.eval(expression);
+        var result = objectUnderTest.eval(reader);
 
         //then
         assertThat(result).isEqualTo(3);
@@ -111,11 +105,7 @@ public class ToyScriptEngineTest {
     @Test
     public void shouldCallSimpleFunction() throws ScriptException {
         // given
-        var expression = join("\n",
-                "function fun (a, b) { var c = 100; var x = 2 * (a + b); return c - x; }",
-                "var a = 1; var b = 2; var c = 3;",
-                "var r = fun(c, b, a);",
-                "return r;");
+        var expression = resourceFileReader("/toys/callSimpleFunction.toys");
         // when
         var result = objectUnderTest.eval(expression);
         var a = (Number) objectUnderTest.get("a");
@@ -135,12 +125,7 @@ public class ToyScriptEngineTest {
 
     @Test
     public void shouldTestMultipleIfElse() throws ScriptException {
-        var expression = join("\n",
-                "var a; var b; var c; var x = 5;",
-                "if (a == 1) { b = 1; } else if (a == null) b = 2; else c = 3;",
-                "if (b == 1) { c = 2; } else if (b == null) c = 1; else a = 7;",
-                "if (a == 7) { if (c == 2 || b == 2) x++; }; x++;"
-        );
+        var expression = resourceFileReader("/toys/multipleIfElse.toys");
         // when
         var result = objectUnderTest.eval(expression);
         var a = (Number) objectUnderTest.get("a");
@@ -149,9 +134,73 @@ public class ToyScriptEngineTest {
         var x = (Number) objectUnderTest.get("x");
 
         // then
+        assertThat(result).isNull();
         assertThat(a).isEqualTo(7);
         assertThat(b).isEqualTo(2);
         assertThat(c).isEqualTo(null);
         assertThat(x).isEqualTo(7);
+    }
+
+    @Test
+    public void shouldHandleSimpleTryCatch() throws ScriptException {
+        // given
+        var reader = resourceFileReader("/toys/simpleTryCatch.toys");
+
+        // when
+        objectUnderTest.eval(reader);
+
+        // then
+        assertThat(objectUnderTest.get("x")).isEqualTo(4);
+        assertThat(objectUnderTest.get("y")).isEqualTo(1);
+        assertThat(objectUnderTest.get("z")).isEqualTo(5);
+        assertThat(objectUnderTest.get("caught")).isEqualTo("error-2");
+    }
+
+    @Test
+    public void shouldTestMultipleScopes() throws ScriptException {
+        // given
+        var reader = resourceFileReader("/toys/multipleScopes.toys");
+
+        // when
+        objectUnderTest.eval(reader);
+
+        // then
+        assertThat(objectUnderTest.get("a")).isEqualTo(1);
+        assertThat(objectUnderTest.get("b")).isEqualTo(6);
+        assertThat(objectUnderTest.get("c")).isEqualTo(40);
+    }
+
+    @Test
+    public void shouldTestRecursion() throws ScriptException {
+        // given
+        var reader = resourceFileReader("/toys/recursion.toys");
+
+        // when
+        objectUnderTest.eval(reader);
+
+        // then
+        assertThat(objectUnderTest.get("f5")).isEqualTo(120);
+        assertThat(objectUnderTest.get("f10")).isEqualTo(3628800);
+    }
+
+    @Test
+    public void shouldComputeFibonacciSeq() throws ScriptException {
+        // given
+        var reader = resourceFileReader("/toys/fibonacci.toys");
+
+        // when
+        objectUnderTest.eval(reader);
+
+        // then
+        assertThat(objectUnderTest.get("f1")).isEqualTo(13);
+        assertThat(objectUnderTest.get("f2")).isEqualTo(13);
+        assertThat(objectUnderTest.get("f3")).isEqualTo(13);
+        assertThat(objectUnderTest.get("f3_37")).isEqualTo(24157817);
+    }
+
+    private static BufferedReader resourceFileReader(String path) {
+        var stream = ToyScriptEngineTest.class.getResourceAsStream(path);
+        assert stream != null;
+        return new BufferedReader(new InputStreamReader(stream));
     }
 }

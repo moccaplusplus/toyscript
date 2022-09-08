@@ -1,0 +1,42 @@
+var x = 1;
+var y = 1;
+var z = 1;
+var caught;
+
+function plus2(y) {
+    y = y + 2;
+    return y;
+}
+
+function mayThrow(a, flag) {
+    z = z + a;
+    if (flag) throw "error-3";
+    z = z * a;
+}
+
+function wrapper () {
+    mayThrow(1, false);
+    mayThrow(3, true);
+    mayThrow(5, false);
+}
+
+try {
+    x++;
+    try {
+        x = plus2(x);
+        throw "error-1";
+        x++;
+    } catch {
+        throw "error-2";
+    }
+    y++;
+} catch (e) {
+
+    try {
+        wrapper();
+    } catch {}
+
+    caught = e;
+}
+
+

@@ -1,13 +1,17 @@
-package lang.toyscript.engine.runtime;
+package lang.toyscript.engine.runtime.visitor;
 
 import lang.toyscript.engine.exception.UncheckedScriptException;
 import lang.toyscript.engine.runtime.registry.Registry;
-import lang.toyscript.engine.runtime.registry.ScopedRegistry;
+import lang.toyscript.engine.runtime.stack.PanicChannel;
+import lang.toyscript.engine.runtime.stack.VarStack;
 import lang.toyscript.parser.ToyScriptLexer;
 import lang.toyscript.parser.ToyScriptParser;
 import lang.toyscript.parser.ToyScriptVisitor;
-import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.script.ScriptContext;
 import java.util.ArrayList;
@@ -17,7 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static java.util.stream.Collectors.joining;
 import static lang.toyscript.engine.runtime.TypeUtils.boolCast;
+import static lang.toyscript.engine.runtime.TypeUtils.ensureType;
 import static lang.toyscript.engine.runtime.TypeUtils.numberAdd;
 import static lang.toyscript.engine.runtime.TypeUtils.numberCast;
 import static lang.toyscript.engine.runtime.TypeUtils.numberDiv;
@@ -29,27 +35,47 @@ import static lang.toyscript.engine.runtime.TypeUtils.numberMul;
 import static lang.toyscript.engine.runtime.TypeUtils.numberSub;
 import static lang.toyscript.engine.runtime.TypeUtils.unaryMin;
 
-public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> implements ToyScriptVisitor<Void> {
+public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements ToyScriptVisitor<Void> {
 
-    private final VarStack stack = new VarStack();
+    static final Logger LOGGER = LoggerFactory.getLogger(ParseTreeVisitor.class);
+
+    public static ParseTreeVisitor create(ScriptContext scriptContext) {
+        var registry = Registry.scoped(scriptContext);
+        var stack = VarStack.create();
+        var panicChannel = PanicChannel.create();
+        return LOGGER.isDebugEnabled() ?
+                new DebugParseTreeVisitor(registry, stack, panicChannel) :
+                new ParseTreeVisitor(registry, stack, panicChannel);
+    }
+
+    private final VarStack stack;
 
     private final Registry registry;
 
+    private final PanicChannel panicToken;
+
     private Object result;
 
-    public ToyScriptTreeVisitor(ScriptContext scriptContext) {
-        registry = new ScopedRegistry(scriptContext);
+    ParseTreeVisitor(Registry registry, VarStack stack, PanicChannel panicChannel) {
+        this.stack = stack;
+        this.registry = registry;
+        this.panicToken = panicChannel;
     }
 
     @Override
     public Void visitProgram(ToyScriptParser.ProgramContext ctx) {
         for (var statement : ctx.statement()) {
             visit(statement);
-            if (!stack.isEmpty()) {
-                var token = (Token) stack.pop();
-                if (token.getType() == ToyScriptLexer.RETURN) {
+            if (panicToken.isPresent()) {
+                var token = panicToken.pop();
+                var type = token.getType();
+                if (type == ToyScriptLexer.RETURN) {
                     result = stack.pop();
                     break;
+                }
+                if (type == ToyScriptLexer.THROW) {
+                    var err = stack.pop();
+                    throw new UncheckedScriptException("Uncaught error " + err, token);
                 }
                 throw new UncheckedScriptException("Token " + token.getText() + " in illegal position", token);
             }
@@ -61,7 +87,7 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
     public Void visitReturnClause(ToyScriptParser.ReturnClauseContext ctx) {
         if (ctx.expr() == null) stack.push(null);
         else visit(ctx.expr());
-        stack.push(ctx.RETURN().getSymbol());
+        panicToken.push(ctx.RETURN().getSymbol());
         return null;
     }
 
@@ -84,7 +110,7 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
         var arrExpr = ctx.expr(0);
         var indExpr = ctx.expr(1);
         visit(arrExpr);
-        var arr = stack.pop(List.class, arrExpr.start);
+        var arr = ensureType(stack.pop(), List.class, arrExpr.start);
         visit(indExpr);
         var index = numberCast(stack.pop()).intValue();
         if (index < 0 || index >= arr.size()) {
@@ -102,7 +128,7 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
         var indExpr = ctx.expr(1);
         var valExpr = ctx.expr(2);
         visit(arrExpr);
-        var arr = stack.pop(List.class, arrExpr.start);
+        var arr = ensureType(stack.pop(), List.class, arrExpr.start);
         visit(indExpr);
         var index = numberCast(stack.pop()).intValue();
         if (index < 0 || index >= arr.size()) {
@@ -119,7 +145,7 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
     public Void visitMemberAccessExpr(ToyScriptParser.MemberAccessExprContext ctx) {
         var mapExpr = ctx.expr();
         visit(mapExpr);
-        var map = stack.pop(Map.class, mapExpr.start);
+        var map = ensureType(stack.pop(), Map.class, mapExpr.start);
         var id = ctx.ID();
         var key = id.getText();
         if (!map.containsKey(key)) {
@@ -136,7 +162,7 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
         var mapExpr = ctx.expr(0);
         var valExpr = ctx.expr(1);
         visit(mapExpr);
-        var map = stack.pop(Map.class, mapExpr.start);
+        var map = ensureType(stack.pop(), Map.class, mapExpr.start);
         var id = ctx.ID();
         var key = id.getText();
         if (!map.containsKey(key)) {
@@ -190,7 +216,7 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
         registry.enterScope();
         for (var statement : ctx.statement()) {
             visit(statement);
-            if (!stack.isEmpty()) break;
+            if (panicToken.isPresent()) break;
         }
         registry.exitScope();
         return null;
@@ -218,11 +244,10 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
         var condition = boolCast(value);
         while (condition) {
             visit(ctx.statement());
-            if (!stack.isEmpty()) {
-                var token = (Token) stack.pop();
-                var type = token.getType();
-                if (type != ToyScriptLexer.CONTINUE) {
-                    if (type != ToyScriptLexer.BREAK) stack.push(token);
+            if (panicToken.isPresent()) {
+                if (panicToken.top().getType() == ToyScriptLexer.CONTINUE) panicToken.pop();
+                else {
+                    if (panicToken.top().getType() == ToyScriptLexer.BREAK) panicToken.pop();
                     break;
                 }
             }
@@ -235,7 +260,7 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
 
     @Override
     public Void visitLoopExitClause(ToyScriptParser.LoopExitClauseContext ctx) {
-        stack.push(ctx.op);
+        panicToken.push(ctx.op);
         return null;
     }
 
@@ -446,27 +471,67 @@ public class ToyScriptTreeVisitor extends AbstractParseTreeVisitor<Void> impleme
     @Override
     public Void visitFunctionDecl(ToyScriptParser.FunctionDeclContext ctx) {
         var identifier = ctx.ID().get(0);
-        var params = ctx.ID().subList(1, ctx.ID().size());
-        Function<Object[], Object> runnable = args -> {
-            registry.enterScope();
-            var limit = Math.min(params.size(), args.length);
-            var i = 0;
-            for (; i < limit; i++) registry.declare(params.get(i), args[i]);
-            for (; i < params.size(); i++) registry.declare(params.get(i));
-            Object result = null;
-            for (var item : ctx.statement()) {
-                visit(item);
-                if (!stack.isEmpty()) {
-                    var token = (Token) stack.pop();
-                    if (token.getType() == ToyScriptLexer.RETURN) result = stack.pop();
-                    else stack.push(token);
-                    break;
+        var function = new Function<Object[], Object>() {
+
+            private final List<TerminalNode> params = ctx.ID().subList(1, ctx.ID().size());
+
+            @Override
+            public Object apply(Object[] args) {
+                registry.enterScope();
+                var limit = Math.min(params.size(), args.length);
+                var i = 0;
+                for (; i < limit; i++) registry.declare(params.get(i), args[i]);
+                for (; i < params.size(); i++) registry.declare(params.get(i));
+                Object result = null;
+                for (var statement : ctx.statement()) {
+                    visit(statement);
+                    if (panicToken.isPresent()) {
+                        if (panicToken.top().getType() == ToyScriptLexer.RETURN) {
+                            panicToken.pop();
+                            result = stack.pop();
+                        }
+                        break;
+                    }
                 }
+                registry.exitScope();
+                return result;
+            }
+
+            @Override
+            public String toString() {
+                return "function(" + params.stream().map(ParseTree::getText).collect(joining(", ")) + ")";
+            }
+        };
+        registry.declare(identifier, function);
+        return null;
+    }
+
+    @Override
+    public Void visitTryStatement(ToyScriptParser.TryStatementContext ctx) {
+        visit(ctx.blockStatement());
+        if (panicToken.isPresent() && panicToken.top().getType() == ToyScriptLexer.THROW) {
+            panicToken.pop();
+            var err = stack.pop();
+            registry.enterScope();
+            var errId = ctx.ID();
+            if (errId != null) {
+                registry.declare(errId, err);
+            }
+            for (var statement : ctx.statement()) {
+                visit(statement);
+                if (panicToken.isPresent()) break;
             }
             registry.exitScope();
-            return result;
-        };
-        registry.declare(identifier, runnable);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitThrowStatement(ToyScriptParser.ThrowStatementContext ctx) {
+        var expression = ctx.expr();
+        if (expression == null) stack.push(null);
+        else visit(expression);
+        panicToken.push(ctx.THROW().getSymbol());
         return null;
     }
 

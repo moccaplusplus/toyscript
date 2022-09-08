@@ -9,7 +9,7 @@ public class SimpleRegistry implements Registry {
 
     private final ScriptContext scriptContext;
 
-    public SimpleRegistry(ScriptContext scriptContext) {
+    SimpleRegistry(ScriptContext scriptContext) {
         this.scriptContext = scriptContext;
     }
 

@@ -1,10 +1,26 @@
 package lang.toyscript.engine.runtime.registry;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.script.ScriptContext;
 
 import static lang.toyscript.engine.runtime.TypeUtils.ensureType;
 
 public interface Registry {
+
+    Logger LOGGER = LoggerFactory.getLogger(Registry.class);
+
+    static Registry scoped(ScriptContext scriptContext) {
+        var registry = new ScopedRegistry(scriptContext);
+        return LOGGER.isDebugEnabled() ? new DebugRegistry(registry) : registry;
+    }
+
+    static Registry simple(ScriptContext scriptContext) {
+        var registry = new SimpleRegistry(scriptContext);
+        return LOGGER.isDebugEnabled() ? new DebugRegistry(registry) : registry;
+    }
 
     Detached NO_OP_DETACHED = () -> {
     };

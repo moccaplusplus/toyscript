@@ -2,6 +2,7 @@ package lang.toyscript.engine.runtime;
 
 import lang.toyscript.engine.ToyScriptEngine;
 import lang.toyscript.engine.exception.UncheckedScriptException;
+import lang.toyscript.engine.runtime.visitor.ParseTreeVisitor;
 import lang.toyscript.parser.ToyScriptParser;
 
 import javax.script.CompiledScript;
@@ -22,7 +23,7 @@ public class ToyScriptProgram extends CompiledScript {
 
     @Override
     public Object eval(ScriptContext context) throws ScriptException {
-        var visitor = new ToyScriptTreeVisitor(context);
+        var visitor = ParseTreeVisitor.create(context);
         try {
             visitor.visit(tree);
         } catch (UncheckedScriptException e) {

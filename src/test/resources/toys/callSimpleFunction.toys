@@ -1,0 +1,13 @@
+var a = 1;
+var b = 2;
+var c = 3;
+
+function fun (a, b) {
+    var c = 100;
+    var x = 2 * (a + b);
+    return c - x;
+}
+
+var r = fun(c, b, a);
+
+return r;

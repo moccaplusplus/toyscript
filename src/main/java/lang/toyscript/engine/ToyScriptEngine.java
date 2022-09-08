@@ -143,7 +143,7 @@ public class ToyScriptEngine implements ScriptEngine, Compilable {
         lexer.addErrorListener(errorListener);
         var tokenStream = new CommonTokenStream(lexer);
 
-        // create AST
+        // create parse tree
         var parser = new ToyScriptParser(tokenStream);
         parser.removeErrorListeners();
         parser.addErrorListener(errorListener);

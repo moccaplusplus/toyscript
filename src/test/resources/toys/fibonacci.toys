@@ -1,0 +1,32 @@
+function fibonacci1(n) {
+    if (n < 2) {
+        return n;
+    }
+    var a = fibonacci1(n - 2);
+    var c = fibonacci1(n - 1);
+    return a + c;
+}
+
+function fibonacci2(n) {
+    if (n < 2) return n;
+    return fibonacci2(n - 2) + fibonacci2(n - 1);
+}
+
+function fibonacci3(n) {
+    var cache = array[n];
+    cache[0] = 0;
+    cache[1] = 1;
+    var i = 2;
+    while (i < n) {
+        cache[i] = cache[i - 1] + cache[i - 2];
+        i++;
+    }
+    return cache[n - 1] + cache[n - 2];
+}
+
+var f1 = fibonacci1(7);
+var f2 = fibonacci2(7);
+var f3 = fibonacci3(7);
+
+var f3_37 = fibonacci3(37);
+

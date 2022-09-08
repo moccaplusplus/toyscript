@@ -8,14 +8,23 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.IntStream;
+
+import static java.util.stream.Collectors.toCollection;
+import static javax.script.ScriptContext.ENGINE_SCOPE;
+import static javax.script.ScriptContext.GLOBAL_SCOPE;
 
 public class ScopedRegistry implements Registry {
 
-    private final List<Map<String, Object>> scopes = new ArrayList<>();
+    private final List<Map<String, Object>> scopes;
 
-    public ScopedRegistry(ScriptContext scriptContext) {
-        scopes.add(scriptContext.getBindings(ScriptContext.GLOBAL_SCOPE));
-        scopes.add(scriptContext.getBindings(ScriptContext.ENGINE_SCOPE));
+    ScopedRegistry(ScriptContext scriptContext) {
+        scopes = IntStream.of(GLOBAL_SCOPE, ENGINE_SCOPE)
+                .mapToObj(scriptContext::getBindings)
+                .filter(Objects::nonNull)
+                .collect(toCollection(ArrayList::new));
+        if (scopes.isEmpty()) scopes.add(new HashMap<>());
     }
 
     @Override
@@ -63,11 +72,7 @@ public class ScopedRegistry implements Registry {
 
     @Override
     public void exitScope() {
-        var scope = getCurrentScope();
-        if (scope == 1) {
-            throw new IllegalStateException("Cannot remove root scope!");
-        }
-        scopes.remove(scope);
+        scopes.remove(getCurrentScope());
     }
 
     @Override
