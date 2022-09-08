@@ -1,6 +1,6 @@
 package lang.toyscript.engine.runtime;
 
-import lang.toyscript.engine.exception.UncheckedScriptException;
+import lang.toyscript.engine.error.UncheckedScriptException;
 import org.antlr.v4.runtime.Token;
 
 public final class TypeUtils {

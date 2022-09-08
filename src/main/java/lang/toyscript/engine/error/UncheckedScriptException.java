@@ -1,6 +1,5 @@
-package lang.toyscript.engine.exception;
+package lang.toyscript.engine.error;
 
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 
 import javax.script.ScriptException;

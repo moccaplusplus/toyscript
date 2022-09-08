@@ -1,6 +1,6 @@
 package lang.toyscript.engine.runtime.registry;
 
-import lang.toyscript.engine.exception.UncheckedScriptException;
+import lang.toyscript.engine.error.UncheckedScriptException;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import javax.script.ScriptContext;

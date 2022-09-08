@@ -1,6 +1,6 @@
-package lang.toyscript.engine;
+package lang.toyscript.engine.error;
 
-import lang.toyscript.engine.exception.UncheckedScriptException;
+import lang.toyscript.engine.error.UncheckedScriptException;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;

@@ -1,6 +1,6 @@
 package lang.toyscript.engine.runtime.visitor;
 
-import lang.toyscript.engine.exception.UncheckedScriptException;
+import lang.toyscript.engine.error.UncheckedScriptException;
 import lang.toyscript.engine.runtime.registry.Registry;
 import lang.toyscript.engine.runtime.stack.PanicChannel;
 import lang.toyscript.engine.runtime.stack.VarStack;
@@ -75,7 +75,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
                 }
                 if (type == ToyScriptLexer.THROW) {
                     var err = stack.pop();
-                    throw new UncheckedScriptException("Uncaught error " + err, token);
+                    throw new UncheckedScriptException("Uncaught error: " + err, token);
                 }
                 throw new UncheckedScriptException("Token " + token.getText() + " in illegal position", token);
             }
