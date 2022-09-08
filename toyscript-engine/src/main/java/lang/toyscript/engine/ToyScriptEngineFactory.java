@@ -13,7 +13,7 @@ public class ToyScriptEngineFactory implements ScriptEngineFactory {
 
     @Override
     public String getEngineVersion() {
-        return "1.0";
+        return "1.0-alpha";
     }
 
     @Override

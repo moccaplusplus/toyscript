@@ -24,7 +24,7 @@ public class ToyScriptConsole {
 
     private boolean interactive = true;
     private String encoding;
-    private Path path;
+    private String path;
     private boolean help;
 
     private void parseArgs(String[] args) {
@@ -36,14 +36,14 @@ public class ToyScriptConsole {
             }
             if ("-i".equals(arg) || "--interactive".equals(arg)) interactive = true;
             else if ("-e".equals(arg) || "--encoding".equals(arg)) encoding = args[++i];
-            else path = Paths.get(arg);
+            else path = arg;
         }
     }
 
     public void start() throws ScriptException, IOException {
         if (help) printHelp();
+        else if (path != null) execute(Paths.get(path), Charset.forName(encoding));
         else if (interactive) consoleLoop();
-        else if (path != null) execute(path, Charset.forName(encoding));
         else printHelp();
     }
 
@@ -52,7 +52,7 @@ public class ToyScriptConsole {
         engine.eval(Files.newBufferedReader(path, charset));
     }
 
-    private void consoleLoop() throws IOException, ScriptException {
+    private void consoleLoop() throws IOException {
         var engine = factory.getScriptEngine();
         var context = engine.getContext();
         var reader = new BufferedReader(context.getReader());
@@ -66,8 +66,12 @@ public class ToyScriptConsole {
             writer.flush();
             var statement = reader.readLine();
             if (statement.trim().equals("/quit")) break;
-            var result = engine.eval(statement);
-            writer.write(String.valueOf(result));
+            try {
+                var result = engine.eval(statement);
+                writer.write(String.valueOf(result));
+            } catch (Exception e) {
+                writer.write("[ERROR: " + e.getClass().getSimpleName() + "] " + e.getMessage());
+            }
             writer.newLine();
             writer.flush();
         }
