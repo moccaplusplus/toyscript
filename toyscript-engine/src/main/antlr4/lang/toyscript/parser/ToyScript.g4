@@ -16,7 +16,7 @@ throwStatement: THROW expr? END;
 
 loopExitClause: op=(BREAK | CONTINUE) END;
 
-returnClause: RETURN expr? END;
+returnExitClause: op=(RETURN | EXIT) expr? END;
 
 exprStatement: expr END;
 
@@ -29,7 +29,7 @@ statement:
     |   whileStatement
     |   tryStatement
     |   throwStatement
-    |   returnClause
+    |   returnExitClause
     |   exprStatement
     |   blockStatement
     |   loopExitClause
@@ -76,6 +76,7 @@ TRY: 'try';
 CATCH: 'catch';
 THROW: 'throw';
 RETURN: 'return';
+EXIT: 'exit';
 
 END: ';';
 COMMA: ',';

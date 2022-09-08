@@ -20,8 +20,8 @@ public class DebugParseTreeVisitor extends ParseTreeVisitor {
     }
 
     @Override
-    public Void visitReturnClause(ToyScriptParser.ReturnClauseContext ctx) {
-        return logVisit("returnClause", super::visitReturnClause, ctx);
+    public Void visitReturnExitClause(ToyScriptParser.ReturnExitClauseContext ctx) {
+        return logVisit("returnExitClause", super::visitReturnExitClause, ctx);
     }
 
     @Override

@@ -10,4 +10,4 @@ function fun (a, b) {
 
 var r = fun(c, b, a);
 
-return r;
+exit r;

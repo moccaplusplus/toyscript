@@ -29,4 +29,3 @@ var f2 = fibonacci2(7);
 var f3 = fibonacci3(7);
 
 var f3_37 = fibonacci3(37);
-

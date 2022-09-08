@@ -7,4 +7,4 @@ var x = struct {
 var y = struct {
     value = (x.a + x.b.c);
 };
-return y.value;
+exit y.value;

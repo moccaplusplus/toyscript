@@ -11,6 +11,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 public class ToyScriptConsole {
 
@@ -20,14 +21,17 @@ public class ToyScriptConsole {
         console.start();
     }
 
-    private final ScriptEngineFactory factory = new ToyScriptEngineFactory();
-
-    private boolean interactive = true;
+    private boolean interactive;
     private String encoding;
     private String path;
     private boolean help;
+    private final ScriptEngineFactory factory;
 
-    private void parseArgs(String[] args) {
+    ToyScriptConsole() {
+        factory = new ToyScriptEngineFactory();
+    }
+
+    void parseArgs(String[] args) {
         for (var i = 0; i < args.length; i++) {
             var arg = args[i];
             if ("-h".equals(arg) || "--help".equals(arg)) {
@@ -40,7 +44,7 @@ public class ToyScriptConsole {
         }
     }
 
-    public void start() throws ScriptException, IOException {
+    void start() throws ScriptException, IOException {
         if (help) printHelp();
         else if (path != null) execute(Paths.get(path), Charset.forName(encoding));
         else if (interactive) consoleLoop();
@@ -53,26 +57,30 @@ public class ToyScriptConsole {
     }
 
     private void consoleLoop() throws IOException {
+        var quitCommands = List.of("/q", "/quit");
         var engine = factory.getScriptEngine();
         var context = engine.getContext();
         var reader = new BufferedReader(context.getReader());
         var writer = new BufferedWriter(context.getWriter());
         writer.write(factory.getEngineName() + " " + factory.getEngineVersion());
         writer.newLine();
-        writer.write("Type /quit to exit");
+        writer.write("Hint: type /q or /quit to exit the console");
         writer.newLine();
         while (true) {
             writer.write("ToyScript> ");
             writer.flush();
             var statement = reader.readLine();
-            if (statement.trim().equals("/quit")) break;
+            if (quitCommands.contains(statement.trim())) break;
             try {
                 var result = engine.eval(statement);
-                writer.write(String.valueOf(result));
+                if (result != null) {
+                    writer.write(String.valueOf(result));
+                    writer.newLine();
+                }
             } catch (Exception e) {
                 writer.write("[ERROR: " + e.getClass().getSimpleName() + "] " + e.getMessage());
+                writer.newLine();
             }
-            writer.newLine();
             writer.flush();
         }
     }
@@ -80,8 +88,9 @@ public class ToyScriptConsole {
     private void printHelp() {
         System.out.println("Usage: toyscript [-i] [-h] /path/to/script.toys [-e utf-8]");
         System.out.println("Options:");
-        System.out.println("    -e, --encoding         Optional. Script file encoding. Default: utf-8.");
-        System.out.println("    -i, --interactive      Interactive mode. Path to file not needed.");
-        System.out.println("    -h, --help             Prints help.");
+        var format = "%6s, %-18s %s %n";
+        System.out.printf(format, "-e", "--encoding", "Optional. Script file encoding. Default: utf-8.");
+        System.out.printf(format, "-i", "--interactive", "Interactive mode. Path to file not needed.");
+        System.out.printf(format, "-h", "--help", "Prints help.");
     }
 }

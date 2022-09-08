@@ -41,7 +41,7 @@ public class ToyScriptEngineTest {
     public void shouldEvalSimpleScriptLeavingValueOnStack() throws ScriptException {
         // given
         var engineScope = objectUnderTest.getBindings(ScriptContext.ENGINE_SCOPE);
-        var expression = "var x = 123; x = 4 + x * 2 + 5; return x;";
+        var expression = "var x = 123; x = 4 + x * 2 + 5; exit x;";
 
         // when
         var result = objectUnderTest.eval(expression);
@@ -76,7 +76,6 @@ public class ToyScriptEngineTest {
     public void shouldTestBasicArrayExpressions() throws ScriptException {
         // given
         var reader = resourceFileReader("/toys/basicArrayExpressions.toys");
-
 
         // when
         objectUnderTest.eval(reader);

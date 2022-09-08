@@ -69,7 +69,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
             if (panicToken.isPresent()) {
                 var token = panicToken.pop();
                 var type = token.getType();
-                if (type == ToyScriptLexer.RETURN) {
+                if (type == ToyScriptLexer.EXIT) {
                     result = stack.pop();
                     break;
                 }
@@ -77,17 +77,17 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
                     var err = stack.pop();
                     throw new UncheckedScriptException("Uncaught error: " + err, token);
                 }
-                throw new UncheckedScriptException("Token " + token.getText() + " in illegal position", token);
+                throw new UncheckedScriptException("Token <" + token.getText() + "> in illegal position", token);
             }
         }
         return null;
     }
 
     @Override
-    public Void visitReturnClause(ToyScriptParser.ReturnClauseContext ctx) {
+    public Void visitReturnExitClause(ToyScriptParser.ReturnExitClauseContext ctx) {
         if (ctx.expr() == null) stack.push(null);
         else visit(ctx.expr());
-        panicToken.push(ctx.RETURN().getSymbol());
+        panicToken.push(ctx.op);
         return null;
     }
 
@@ -266,8 +266,9 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
 
     @Override
     public Void visitExprStatement(ToyScriptParser.ExprStatementContext ctx) {
+        ctx.END();
         visit(ctx.expr());
-        stack.pop(); // clear stack after standalone expression;
+        stack.pop(); // clear stack after standalone expression
         return null;
     }
 
