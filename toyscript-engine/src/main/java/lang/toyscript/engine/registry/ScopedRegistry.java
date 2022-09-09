@@ -1,6 +1,7 @@
-package lang.toyscript.engine.runtime.registry;
+package lang.toyscript.engine.registry;
 
 import lang.toyscript.engine.error.UncheckedScriptException;
+import lang.toyscript.engine.type.StandardLib;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import javax.script.ScriptContext;
@@ -11,20 +12,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
-import static java.util.stream.Collectors.toCollection;
 import static javax.script.ScriptContext.ENGINE_SCOPE;
 import static javax.script.ScriptContext.GLOBAL_SCOPE;
 
 public class ScopedRegistry implements Registry {
 
-    private final List<Map<String, Object>> scopes;
+    private final List<Map<String, Object>> scopes = new ArrayList<>();
 
     ScopedRegistry(ScriptContext scriptContext) {
-        scopes = IntStream.of(GLOBAL_SCOPE, ENGINE_SCOPE)
+        scopes.add(StandardLib.createBindings(scriptContext));
+        scopes.addAll(IntStream.of(GLOBAL_SCOPE, ENGINE_SCOPE)
                 .mapToObj(scriptContext::getBindings)
                 .filter(Objects::nonNull)
-                .collect(toCollection(ArrayList::new));
-        if (scopes.isEmpty()) scopes.add(new HashMap<>());
+                .toList());
     }
 
     @Override

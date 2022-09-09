@@ -1,4 +1,4 @@
-package lang.toyscript.engine.runtime.registry;
+package lang.toyscript.engine.registry;
 
 import lang.toyscript.engine.error.UncheckedScriptException;
 import org.antlr.v4.runtime.tree.TerminalNode;

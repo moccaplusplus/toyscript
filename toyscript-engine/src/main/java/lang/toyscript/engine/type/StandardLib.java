@@ -1,26 +1,28 @@
-package lang.toyscript.engine.runtime;
+package lang.toyscript.engine.type;
 
-import lang.toyscript.engine.runtime.type.JavaCall;
-
-import javax.script.Bindings;
+import javax.script.ScriptContext;
 import java.io.BufferedReader;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-public interface StandardLibrary {
+public interface StandardLib {
 
     JavaCall readFile = new JavaCall("function(path)", args -> {
+        if (args.length == 0) throw new IllegalStateException("Path to file cannot be null");
         var path = Paths.get(String.valueOf(args[0]));
         var lines = Files.readAllLines(path);
         return String.join("\n", lines);
     });
 
     JavaCall writeFile = new JavaCall("function(path, text)", args -> {
+        if (args.length == 0) throw new IllegalStateException("Path to file cannot be null");
+        if (args.length == 1) throw new IllegalStateException("Text to write cannot be null ");
         var path = Paths.get(String.valueOf(args[0]));
         var text = String.valueOf(args[1]);
         Files.writeString(path, text);
@@ -69,13 +71,19 @@ public interface StandardLibrary {
         return new JavaCall("function()", args -> buffered.readLine());
     }
 
-    static void initBindings(Bindings bindings, Reader reader, Writer writer) {
-        bindings.put("read", readLine(reader));
-        bindings.put("print", printLine(writer));
-        bindings.put("readFile", readFile);
-        bindings.put("writeFile", writeFile);
-        bindings.put("length", length);
-        bindings.put("typeof", typeof);
-        bindings.put("keys", keys);
+    static Map<String, Object> createBindings(ScriptContext scriptContext) {
+        return createBindings(scriptContext.getReader(), scriptContext.getWriter());
+    }
+
+    static Map<String, Object> createBindings(Reader reader, Writer writer) {
+        var m = new HashMap<String, Object>();
+        m.put("read", readLine(reader));
+        m.put("print", printLine(writer));
+        m.put("readFile", readFile);
+        m.put("writeFile", writeFile);
+        m.put("length", length);
+        m.put("typeof", typeof);
+        m.put("keys", keys);
+        return m;
     }
 }

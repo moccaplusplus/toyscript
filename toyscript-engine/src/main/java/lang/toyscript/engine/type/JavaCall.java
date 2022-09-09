@@ -1,4 +1,4 @@
-package lang.toyscript.engine.runtime.type;
+package lang.toyscript.engine.type;
 
 import java.util.function.Function;
 

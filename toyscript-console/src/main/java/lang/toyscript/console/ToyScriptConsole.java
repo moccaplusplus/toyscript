@@ -1,8 +1,7 @@
 package lang.toyscript.console;
 
-import lang.toyscript.engine.ToyScriptEngineFactory;
-
 import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -28,7 +27,7 @@ public class ToyScriptConsole {
     private final ScriptEngine engine;
 
     ToyScriptConsole() {
-        engine = new ToyScriptEngineFactory().getScriptEngine();
+        engine = new ScriptEngineManager().getEngineByName("ToyScript");
     }
 
     void parseArgs(String[] args) {

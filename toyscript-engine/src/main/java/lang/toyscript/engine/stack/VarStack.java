@@ -1,4 +1,4 @@
-package lang.toyscript.engine.runtime.stack;
+package lang.toyscript.engine.stack;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package lang.toyscript.engine.runtime.stack;
+package lang.toyscript.engine.stack;
 
 import org.antlr.v4.runtime.Token;
 

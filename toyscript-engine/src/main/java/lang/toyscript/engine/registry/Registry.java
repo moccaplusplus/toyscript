@@ -1,4 +1,4 @@
-package lang.toyscript.engine.runtime.registry;
+package lang.toyscript.engine.registry;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.slf4j.Logger;
@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.script.ScriptContext;
 
-import static lang.toyscript.engine.runtime.type.TypeUtils.ensureType;
+import static lang.toyscript.engine.type.TypeUtils.ensureType;
 
 public interface Registry {
 

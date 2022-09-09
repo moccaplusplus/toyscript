@@ -1,6 +1,6 @@
-package lang.toyscript.engine.runtime.stack;
+package lang.toyscript.engine.stack;
 
-import static lang.toyscript.engine.runtime.type.TypeUtils.ellipsize;
+import static lang.toyscript.engine.type.TypeUtils.ellipsize;
 
 public class DebugVarStack extends VarStack {
 

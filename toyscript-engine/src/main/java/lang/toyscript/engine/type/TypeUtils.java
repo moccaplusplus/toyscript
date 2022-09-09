@@ -1,4 +1,4 @@
-package lang.toyscript.engine.runtime.type;
+package lang.toyscript.engine.type;
 
 import lang.toyscript.engine.error.UncheckedScriptException;
 import org.antlr.v4.runtime.Token;
@@ -64,7 +64,7 @@ public interface TypeUtils {
         return 1;
     }
 
-    public static Boolean boolCast(Object obj) {
+    static Boolean boolCast(Object obj) {
         if (obj == null) return false;
         if (obj instanceof Boolean b) return b;
         if (obj instanceof Integer i) return i != 0;
@@ -73,7 +73,7 @@ public interface TypeUtils {
         return true;
     }
 
-    public static String ellipsize(Object o) {
+    static String ellipsize(Object o) {
         var s = String.valueOf(o);
         return s.length() > 32 ? s.substring(0, 30).trim() + "..." : s;
     }

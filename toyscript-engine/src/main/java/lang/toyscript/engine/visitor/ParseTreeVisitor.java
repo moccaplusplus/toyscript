@@ -1,9 +1,9 @@
-package lang.toyscript.engine.runtime.visitor;
+package lang.toyscript.engine.visitor;
 
 import lang.toyscript.engine.error.UncheckedScriptException;
-import lang.toyscript.engine.runtime.registry.Registry;
-import lang.toyscript.engine.runtime.stack.PanicChannel;
-import lang.toyscript.engine.runtime.stack.VarStack;
+import lang.toyscript.engine.registry.Registry;
+import lang.toyscript.engine.stack.PanicChannel;
+import lang.toyscript.engine.stack.VarStack;
 import lang.toyscript.parser.ToyScriptLexer;
 import lang.toyscript.parser.ToyScriptParser;
 import lang.toyscript.parser.ToyScriptVisitor;
@@ -22,18 +22,18 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.joining;
-import static lang.toyscript.engine.runtime.type.TypeUtils.boolCast;
-import static lang.toyscript.engine.runtime.type.TypeUtils.ensureType;
-import static lang.toyscript.engine.runtime.type.TypeUtils.numberAdd;
-import static lang.toyscript.engine.runtime.type.TypeUtils.numberCast;
-import static lang.toyscript.engine.runtime.type.TypeUtils.numberDiv;
-import static lang.toyscript.engine.runtime.type.TypeUtils.numberEquals;
-import static lang.toyscript.engine.runtime.type.TypeUtils.numberGreaterThen;
-import static lang.toyscript.engine.runtime.type.TypeUtils.numberLessThen;
-import static lang.toyscript.engine.runtime.type.TypeUtils.numberMod;
-import static lang.toyscript.engine.runtime.type.TypeUtils.numberMul;
-import static lang.toyscript.engine.runtime.type.TypeUtils.numberSub;
-import static lang.toyscript.engine.runtime.type.TypeUtils.unaryMin;
+import static lang.toyscript.engine.type.TypeUtils.boolCast;
+import static lang.toyscript.engine.type.TypeUtils.ensureType;
+import static lang.toyscript.engine.type.TypeUtils.numberAdd;
+import static lang.toyscript.engine.type.TypeUtils.numberCast;
+import static lang.toyscript.engine.type.TypeUtils.numberDiv;
+import static lang.toyscript.engine.type.TypeUtils.numberEquals;
+import static lang.toyscript.engine.type.TypeUtils.numberGreaterThen;
+import static lang.toyscript.engine.type.TypeUtils.numberLessThen;
+import static lang.toyscript.engine.type.TypeUtils.numberMod;
+import static lang.toyscript.engine.type.TypeUtils.numberMul;
+import static lang.toyscript.engine.type.TypeUtils.numberSub;
+import static lang.toyscript.engine.type.TypeUtils.unaryMin;
 
 public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements ToyScriptVisitor<Void> {
 

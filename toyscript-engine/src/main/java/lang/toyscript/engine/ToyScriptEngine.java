@@ -2,8 +2,6 @@ package lang.toyscript.engine;
 
 import lang.toyscript.engine.error.ParseErrorListener;
 import lang.toyscript.engine.error.UncheckedScriptException;
-import lang.toyscript.engine.runtime.StandardLibrary;
-import lang.toyscript.engine.runtime.ToyScriptProgram;
 import lang.toyscript.parser.ToyScriptLexer;
 import lang.toyscript.parser.ToyScriptParser;
 import org.antlr.v4.runtime.CharStream;
@@ -35,9 +33,6 @@ public class ToyScriptEngine implements ScriptEngine, Compilable {
     public ToyScriptEngine(ToyScriptEngineFactory factory) {
         this.factory = factory;
         context = new SimpleScriptContext();
-        var globals = createBindings();
-        StandardLibrary.initBindings(globals, context.getReader(), context.getWriter());
-        context.setBindings(globals, ScriptContext.GLOBAL_SCOPE);
     }
 
     @Override
@@ -105,7 +100,6 @@ public class ToyScriptEngine implements ScriptEngine, Compilable {
         if (context == null) {
             throw new NullPointerException("Context must not be null");
         }
-        context.setBindings(this.context.getBindings(ScriptContext.GLOBAL_SCOPE), ScriptContext.GLOBAL_SCOPE);
         this.context = context;
 
     }

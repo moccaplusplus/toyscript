@@ -1,8 +1,7 @@
-package lang.toyscript.engine.runtime;
+package lang.toyscript.engine;
 
-import lang.toyscript.engine.ToyScriptEngine;
 import lang.toyscript.engine.error.UncheckedScriptException;
-import lang.toyscript.engine.runtime.visitor.ParseTreeVisitor;
+import lang.toyscript.engine.visitor.ParseTreeVisitor;
 import lang.toyscript.parser.ToyScriptParser;
 
 import javax.script.CompiledScript;

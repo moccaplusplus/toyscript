@@ -1,8 +1,8 @@
-package lang.toyscript.engine.runtime.visitor;
+package lang.toyscript.engine.visitor;
 
-import lang.toyscript.engine.runtime.registry.Registry;
-import lang.toyscript.engine.runtime.stack.PanicChannel;
-import lang.toyscript.engine.runtime.stack.VarStack;
+import lang.toyscript.engine.registry.Registry;
+import lang.toyscript.engine.stack.PanicChannel;
+import lang.toyscript.engine.stack.VarStack;
 import lang.toyscript.parser.ToyScriptParser;
 import org.antlr.v4.runtime.ParserRuleContext;
 

@@ -1,8 +1,8 @@
-package lang.toyscript.engine.runtime.registry;
+package lang.toyscript.engine.registry;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import static lang.toyscript.engine.runtime.type.TypeUtils.ellipsize;
+import static lang.toyscript.engine.type.TypeUtils.ellipsize;
 
 public class DebugRegistry implements Registry {
 
