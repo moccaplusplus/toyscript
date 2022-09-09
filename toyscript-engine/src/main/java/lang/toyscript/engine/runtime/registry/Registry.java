@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.script.ScriptContext;
 
-import static lang.toyscript.engine.runtime.TypeUtils.ensureType;
+import static lang.toyscript.engine.runtime.type.TypeUtils.ensureType;
 
 public interface Registry {
 

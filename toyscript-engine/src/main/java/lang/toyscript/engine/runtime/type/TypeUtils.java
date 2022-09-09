@@ -1,61 +1,61 @@
-package lang.toyscript.engine.runtime;
+package lang.toyscript.engine.runtime.type;
 
 import lang.toyscript.engine.error.UncheckedScriptException;
 import org.antlr.v4.runtime.Token;
 
-public final class TypeUtils {
+public interface TypeUtils {
 
     @SuppressWarnings("unchecked")
-    public static <T> T ensureType(Object obj, Class<T> type, Token pos) {
+    static <T> T ensureType(Object obj, Class<T> type, Token pos) {
         if (type.isInstance(obj)) return (T) obj;
         throw new UncheckedScriptException("Instance of " + type.getSimpleName() + " is expected", pos);
     }
 
-    public static Number numberAdd(Number num0, Number num1) {
+    static Number numberAdd(Number num0, Number num1) {
         if (num0 instanceof Integer && num1 instanceof Integer) return num0.intValue() + num1.intValue();
         return num0.floatValue() + num1.floatValue();
     }
 
-    public static Number numberSub(Number num0, Number num1) {
+    static Number numberSub(Number num0, Number num1) {
         if (num0 instanceof Integer && num1 instanceof Integer) return num0.intValue() - num1.intValue();
         return num0.floatValue() - num1.floatValue();
     }
 
-    public static Number numberMul(Number num0, Number num1) {
+    static Number numberMul(Number num0, Number num1) {
         if (num0 instanceof Integer && num1 instanceof Integer) return num0.intValue() * num1.intValue();
         return num0.floatValue() * num1.floatValue();
     }
 
-    public static Number numberDiv(Number num0, Number num1) {
+    static Number numberDiv(Number num0, Number num1) {
         if (num0 instanceof Integer && num1 instanceof Integer) return num0.intValue() / num1.intValue();
         return num0.floatValue() / num1.floatValue();
     }
 
-    public static Integer numberMod(Number num0, Number num1) {
+    static Integer numberMod(Number num0, Number num1) {
         return num0.intValue() % num1.intValue();
     }
 
-    public static Boolean numberEquals(Number num0, Number num1) {
+    static Boolean numberEquals(Number num0, Number num1) {
         if (num0 instanceof Integer && num1 instanceof Integer) return num0.intValue() == num1.intValue();
         return num0.floatValue() == num1.floatValue();
     }
 
-    public static Boolean numberLessThen(Number num0, Number num1) {
+    static Boolean numberLessThen(Number num0, Number num1) {
         if (num0 instanceof Integer && num1 instanceof Integer) return num0.intValue() < num1.intValue();
         return num0.floatValue() < num1.floatValue();
     }
 
-    public static boolean numberGreaterThen(Number num0, Number num1) {
+    static boolean numberGreaterThen(Number num0, Number num1) {
         if (num0 instanceof Integer && num1 instanceof Integer) return num0.intValue() > num1.intValue();
         return num0.floatValue() > num1.floatValue();
     }
 
-    public static Number unaryMin(Number obj) {
+    static Number unaryMin(Number obj) {
         if (obj instanceof Integer) return -obj.intValue();
         return -obj.floatValue();
     }
 
-    public static Number numberCast(Object obj) {
+    static Number numberCast(Object obj) {
         if (obj == null) return 0;
         if (obj instanceof Boolean b) return b ? 1 : 0;
         if (obj instanceof Integer i) return i;

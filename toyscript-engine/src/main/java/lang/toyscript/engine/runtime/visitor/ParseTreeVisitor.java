@@ -22,18 +22,18 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.joining;
-import static lang.toyscript.engine.runtime.TypeUtils.boolCast;
-import static lang.toyscript.engine.runtime.TypeUtils.ensureType;
-import static lang.toyscript.engine.runtime.TypeUtils.numberAdd;
-import static lang.toyscript.engine.runtime.TypeUtils.numberCast;
-import static lang.toyscript.engine.runtime.TypeUtils.numberDiv;
-import static lang.toyscript.engine.runtime.TypeUtils.numberEquals;
-import static lang.toyscript.engine.runtime.TypeUtils.numberGreaterThen;
-import static lang.toyscript.engine.runtime.TypeUtils.numberLessThen;
-import static lang.toyscript.engine.runtime.TypeUtils.numberMod;
-import static lang.toyscript.engine.runtime.TypeUtils.numberMul;
-import static lang.toyscript.engine.runtime.TypeUtils.numberSub;
-import static lang.toyscript.engine.runtime.TypeUtils.unaryMin;
+import static lang.toyscript.engine.runtime.type.TypeUtils.boolCast;
+import static lang.toyscript.engine.runtime.type.TypeUtils.ensureType;
+import static lang.toyscript.engine.runtime.type.TypeUtils.numberAdd;
+import static lang.toyscript.engine.runtime.type.TypeUtils.numberCast;
+import static lang.toyscript.engine.runtime.type.TypeUtils.numberDiv;
+import static lang.toyscript.engine.runtime.type.TypeUtils.numberEquals;
+import static lang.toyscript.engine.runtime.type.TypeUtils.numberGreaterThen;
+import static lang.toyscript.engine.runtime.type.TypeUtils.numberLessThen;
+import static lang.toyscript.engine.runtime.type.TypeUtils.numberMod;
+import static lang.toyscript.engine.runtime.type.TypeUtils.numberMul;
+import static lang.toyscript.engine.runtime.type.TypeUtils.numberSub;
+import static lang.toyscript.engine.runtime.type.TypeUtils.unaryMin;
 
 public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements ToyScriptVisitor<Void> {
 
@@ -201,12 +201,13 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
     @Override
     public Void visitVarDecl(ToyScriptParser.VarDeclContext ctx) {
         var identifier = ctx.ID();
-        registry.declare(identifier);
         var expr = ctx.expr();
-        if (expr != null) {
+        if (expr == null) {
+            registry.declare(identifier);
+        } else {
             visit(expr);
             var value = stack.pop();
-            registry.assign(identifier, value, registry.getCurrentScope());
+            registry.declare(identifier, value);
         }
         return null;
     }

@@ -197,6 +197,11 @@ public class ToyScriptEngineTest {
         assertThat(objectUnderTest.get("f3_37")).isEqualTo(24157817);
     }
 
+    @Test
+    public void globalTest() throws ScriptException {
+        objectUnderTest.eval("print(1);");
+    }
+
     private static BufferedReader resourceFileReader(String path) {
         var stream = ToyScriptEngineTest.class.getResourceAsStream(path);
         assert stream != null;

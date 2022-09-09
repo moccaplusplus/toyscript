@@ -2,7 +2,7 @@ package lang.toyscript.console;
 
 import lang.toyscript.engine.ToyScriptEngineFactory;
 
-import javax.script.ScriptEngineFactory;
+import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -25,10 +25,10 @@ public class ToyScriptConsole {
     private String encoding;
     private String path;
     private boolean help;
-    private final ScriptEngineFactory factory;
+    private final ScriptEngine engine;
 
     ToyScriptConsole() {
-        factory = new ToyScriptEngineFactory();
+        engine = new ToyScriptEngineFactory().getScriptEngine();
     }
 
     void parseArgs(String[] args) {
@@ -52,13 +52,12 @@ public class ToyScriptConsole {
     }
 
     private void execute(Path path, Charset charset) throws IOException, ScriptException {
-        var engine = factory.getScriptEngine();
         engine.eval(Files.newBufferedReader(path, charset));
     }
 
     private void consoleLoop() throws IOException {
         var quitCommands = List.of("/q", "/quit");
-        var engine = factory.getScriptEngine();
+        var factory = engine.getFactory();
         var context = engine.getContext();
         var reader = new BufferedReader(context.getReader());
         var writer = new BufferedWriter(context.getWriter());
