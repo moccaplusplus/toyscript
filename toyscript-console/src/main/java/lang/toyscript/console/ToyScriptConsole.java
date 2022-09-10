@@ -68,7 +68,9 @@ public class ToyScriptConsole {
             writer.write("ToyScript> ");
             writer.flush();
             var statement = reader.readLine();
-            if (quitCommands.contains(statement.trim())) break;
+            if (quitCommands.contains(statement.trim())) {
+                break;
+            }
             try {
                 var result = engine.eval(statement);
                 if (result != null) {

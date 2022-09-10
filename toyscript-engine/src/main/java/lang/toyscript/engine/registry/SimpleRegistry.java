@@ -14,7 +14,7 @@ public class SimpleRegistry implements Registry {
     }
 
     @Override
-    public void declare(TerminalNode id, Object value) throws SignalException {
+    public void declare(TerminalNode id, Object value) {
         var bindings = scriptContext.getBindings(getCurrentScope());
         var name = id.getText();
         if (bindings.containsKey(name)) {
@@ -37,7 +37,7 @@ public class SimpleRegistry implements Registry {
     }
 
     @Override
-    public int getDeclaringScope(TerminalNode id) throws SignalException {
+    public int getDeclaringScope(TerminalNode id) {
         var name = id.getText();
         var scope = scriptContext.getAttributesScope(name);
         if (scope == -1) {

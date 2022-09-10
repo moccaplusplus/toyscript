@@ -1,6 +1,5 @@
 package lang.toyscript.engine.registry;
 
-import lang.toyscript.engine.error.SignalException;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import static lang.toyscript.engine.visitor.TypeUtils.ellipsize;
@@ -14,7 +13,7 @@ public class DebugRegistry implements Registry {
     }
 
     @Override
-    public void declare(TerminalNode id, Object value) throws SignalException {
+    public void declare(TerminalNode id, Object value) {
         wrapped.declare(id, value);
         LOGGER.debug("Declare {}={} [scope={}]", id.getText(), ellipsize(value), getCurrentScope());
     }
@@ -33,7 +32,7 @@ public class DebugRegistry implements Registry {
     }
 
     @Override
-    public int getDeclaringScope(TerminalNode id) throws SignalException {
+    public int getDeclaringScope(TerminalNode id) {
         return wrapped.getDeclaringScope(id);
     }
 
