@@ -1,0 +1,29 @@
+var s = struct {
+    s = struct {
+        s = struct {
+            s = struct {
+                i = 5;
+            };
+        };
+    };
+};
+
+var i = 0;
+function f() {
+    i++;
+    function f() {
+        i++;
+        function f() {
+            i++;
+            function f() {
+                return i++;
+            }
+            return f();
+        }
+        return f();
+    }
+    return f();
+}
+
+var a = s.s.s.s.i;
+var b = f();

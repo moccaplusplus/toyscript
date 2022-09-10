@@ -41,14 +41,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>3.4.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <configuration>
                     <excludePackageNames>lang.toyscript.parser</excludePackageNames>
                     <doclet>nl.talsmasoftware.umldoclet.UMLDoclet</doclet>

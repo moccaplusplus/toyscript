@@ -1,0 +1,9 @@
+function reverseString (str) {
+    var i = 0;
+    var r = "";
+    while (i < length(str)) {
+        r = str[i] + r;
+        i++;
+    }
+    return r;
+}

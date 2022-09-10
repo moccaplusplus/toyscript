@@ -1,0 +1,13 @@
+function binarySearch (arr, val) {
+    var size = length(arr);
+    var low = 0;
+    var high = size - 1;
+    var mid;
+    while (low <= high) {
+        mid = (low + high) / 2;
+        if (arr[mid] < val) low = mid + 1;
+        else if (val < arr[mid]) high = mid - 1;
+        else return mid; // found
+    }
+    return -(low + 1); // not found.
+}

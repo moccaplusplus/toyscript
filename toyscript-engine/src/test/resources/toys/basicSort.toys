@@ -1,0 +1,51 @@
+function swap(arr, i1, i2) {
+    var tmp = arr[i1];
+    arr[i1] = arr[i2];
+    arr[i2] = tmp;
+}
+
+function selectionSort (arr) {
+    var size = length(arr);
+    var i = 0;
+    var minIndex;
+    while (i < size - 1) {
+        minIndex = i;
+        var j = i + 1;
+        while (j < size) {
+            if (arr[j] < arr[minIndex]) minIndex = j;
+            j++;
+        }
+        if (minIndex != i) swap(arr, i, minIndex);
+        i++;
+    }
+}
+
+function insertionSort (arr) {
+    var size = length(arr);
+    var i = 1;
+    while (i < size) {
+        var j = i;
+        while (j > 0) {
+            if (arr[j] < arr[j - 1]) swap(arr, j, j - 1);
+            else break;
+            j--;
+        }
+        i++;
+    }
+}
+
+function bubbleSort (arr) {
+    var size = length(arr);
+    var flag = true;
+    while(flag) {
+        flag = false;
+        var i = 0;
+        while (i < size - 1) {
+            if (arr[i + 1] < arr[i]) {
+                swap(arr, i, i + 1);
+                flag = true;
+            }
+            i++;
+        }
+    };
+}
