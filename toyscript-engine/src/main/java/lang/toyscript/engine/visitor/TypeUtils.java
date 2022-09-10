@@ -96,6 +96,8 @@ public interface TypeUtils {
     }
 
     static String errorMsg(Exception e) {
-        return e.getClass().getSimpleName() + " " + e.getMessage();
+        Throwable cause = e;
+        while (cause.getCause() != null) cause = cause.getCause();
+        return cause.getClass().getSimpleName() + " " + cause.getMessage();
     }
 }

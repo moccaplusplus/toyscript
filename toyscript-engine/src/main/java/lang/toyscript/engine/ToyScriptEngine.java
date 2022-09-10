@@ -1,7 +1,7 @@
 package lang.toyscript.engine;
 
 import lang.toyscript.engine.error.ParseErrorListener;
-import lang.toyscript.engine.error.RuntimeScriptException;
+import lang.toyscript.engine.error.ParseException;
 import lang.toyscript.parser.ToyScriptLexer;
 import lang.toyscript.parser.ToyScriptParser;
 import org.antlr.v4.runtime.CharStream;
@@ -114,7 +114,7 @@ public class ToyScriptEngine implements ScriptEngine, Compilable {
         try {
             var input = CharStreams.fromString(script);
             return doCompile(input);
-        } catch (RuntimeScriptException e) {
+        } catch (ParseException e) {
             throw e.checked();
         } catch (RuntimeException e) {
             throw new ScriptException(e);
@@ -126,7 +126,7 @@ public class ToyScriptEngine implements ScriptEngine, Compilable {
         try {
             var input = CharStreams.fromReader(reader);
             return doCompile(input);
-        } catch (RuntimeScriptException e) {
+        } catch (ParseException e) {
             throw e.checked();
         } catch (IOException | RuntimeException e) {
             throw new ScriptException(e);

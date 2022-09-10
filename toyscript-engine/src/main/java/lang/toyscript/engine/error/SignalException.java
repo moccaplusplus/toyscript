@@ -4,7 +4,10 @@ import lang.toyscript.parser.ToyScriptLexer;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 
+import javax.script.ScriptException;
+
 import static lang.toyscript.engine.visitor.TypeUtils.errorMsg;
+import static lang.toyscript.parser.ToyScriptLexer.ruleNames;
 
 public class SignalException extends RuntimeException {
 
@@ -39,7 +42,7 @@ public class SignalException extends RuntimeException {
 
     public static class Continue extends SignalException {
         public Continue(Token token) {
-            super(ToyScriptLexer.BREAK, token, null);
+            super(ToyScriptLexer.CONTINUE, token, null);
         }
     }
 
@@ -59,23 +62,15 @@ public class SignalException extends RuntimeException {
         this(type, token.getLine(), token.getCharPositionInLine(), payload);
     }
 
-    protected SignalException(Token token, Object payload) {
-        this(token.getType(), token, payload);
-    }
-
-    public int type() {
-        return type;
-    }
-
-    public int line() {
-        return line;
-    }
-
-    public int col() {
-        return col;
-    }
-
     public Object payload() {
         return payload;
+    }
+
+    public ScriptException checked() {
+        if (type == ToyScriptLexer.THROW) {
+            return new ScriptException(String.valueOf(payload), "script", line, col);
+        }
+        return new ScriptException(
+                "Token <" + ruleNames[type] + "> in illegal position", "script", line, col);
     }
 }

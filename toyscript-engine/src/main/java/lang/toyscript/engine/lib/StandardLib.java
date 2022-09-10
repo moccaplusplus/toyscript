@@ -15,14 +15,14 @@ import static lang.toyscript.engine.visitor.TypeUtils.typeName;
 
 public interface StandardLib {
 
-    JavaCall readFile = new JavaCall("path", args -> {
+    JavaFunctionCall readFile = new JavaFunctionCall("path", args -> {
         if (args[0] == null) throw new IllegalStateException("Path to file cannot be null");
         var path = Paths.get(String.valueOf(args[0]));
         var lines = Files.readAllLines(path);
         return String.join("\n", lines);
     });
 
-    JavaCall writeFile = new JavaCall(new String[]{"path, text"}, args -> {
+    JavaFunctionCall writeFile = new JavaFunctionCall(new String[]{"path, text"}, args -> {
         if (args[0] == null) throw new IllegalStateException("Path to file cannot be null");
         if (args[1] == null) throw new IllegalStateException("Text to write cannot be null ");
         var path = Paths.get(String.valueOf(args[0]));
@@ -31,24 +31,24 @@ public interface StandardLib {
         return null;
     });
 
-    JavaCall length = new JavaCall("arg", args -> {
+    JavaFunctionCall length = new JavaFunctionCall("arg", args -> {
         if (args[0] instanceof List<?> list) return list.size();
         if (args[0] instanceof Map<?, ?> map) return map.size();
         if (args[0] instanceof String str) return str.length();
         return null;
     });
 
-    JavaCall typeof = new JavaCall("obj", args -> typeName(args[0]));
+    JavaFunctionCall typeof = new JavaFunctionCall("obj", args -> typeName(args[0]));
 
-    JavaCall keys = new JavaCall("obj", args -> {
+    JavaFunctionCall keys = new JavaFunctionCall("obj", args -> {
         if (args[0] instanceof Map<?, ?> m) {
             return m.keySet().stream().map(String::valueOf).toList();
         }
         return null;
     });
 
-    static JavaCall printLine(Writer writer) {
-        return new JavaCall("function(line)", args -> {
+    static JavaFunctionCall printLine(Writer writer) {
+        return new JavaFunctionCall("function(line)", args -> {
             if (args.length > 0) writer.write(String.valueOf(args[0]));
             writer.write(System.lineSeparator());
             writer.flush();
@@ -59,7 +59,7 @@ public interface StandardLib {
     static Function<Object[], Object> readLine(Reader reader) {
         var buffered = reader instanceof BufferedReader b ?
                 b : new BufferedReader(reader);
-        return new JavaCall("function()", args -> buffered.readLine());
+        return new JavaFunctionCall("function()", args -> buffered.readLine());
     }
 
     static Map<String, Object> createBindings(ScriptContext scriptContext) {

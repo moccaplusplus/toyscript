@@ -2,7 +2,7 @@ package lang.toyscript.engine.lib;
 
 import java.util.function.Function;
 
-public class JavaCall implements Function<Object[], Object> {
+public class JavaFunctionCall implements Function<Object[], Object> {
 
     @FunctionalInterface
     public interface Delegate {
@@ -15,15 +15,15 @@ public class JavaCall implements Function<Object[], Object> {
 
     private final int length;
 
-    public JavaCall(Delegate delegate) {
+    public JavaFunctionCall(Delegate delegate) {
         this(new String[0], delegate);
     }
 
-    public JavaCall(String param, Delegate delegate) {
+    public JavaFunctionCall(String param, Delegate delegate) {
         this(new String[]{param}, delegate);
     }
 
-    public JavaCall(String[] params, Delegate delegate) {
+    public JavaFunctionCall(String[] params, Delegate delegate) {
         this.delegate = delegate;
         strVal = "function(" + String.join(", ", params) + ")";
         length = params.length;
