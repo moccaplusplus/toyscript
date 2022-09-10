@@ -128,7 +128,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
                 stack.push(value);
             } else {
                 throw new SignalException.Throw(arrExpr.getStart(),
-                        "Expected array or string but " + typeName(obj) + " was found");
+                        "Expected array or string but was " + typeName(obj));
             }
         } catch (Exception e) {
             throw SignalException.wrap(ctx, e);
@@ -161,7 +161,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
             }
         } else {
             throw new SignalException.Throw(
-                    arrExpr.getStart(), "Expected array but " + typeName(obj) + " was found");
+                    arrExpr.getStart(), "Expected array but was " + typeName(obj));
         }
         return null;
     }
@@ -186,7 +186,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
             }
         } else {
             throw new SignalException.Throw(mapExpr.getStart(),
-                    "Expected struct but " + typeName(obj) + " was found");
+                    "Expected struct but was " + typeName(obj));
         }
         return null;
     }
@@ -217,7 +217,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
             }
         } else {
             throw new SignalException.Throw(mapExpr.getStart(),
-                    "Expected struct but " + typeName(obj) + " was found");
+                    "Expected struct but was " + typeName(obj));
         }
 
         return null;
@@ -295,6 +295,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
             try {
                 visit(ctx.statement());
             } catch (SignalException.Continue e) {
+                // just catch :)
             } catch (SignalException.Break e) {
                 break;
             }
@@ -521,14 +522,20 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
                 args[i] = stack.pop();
             }
 
-            var detached = registry.detachScope(scope);
-            try {
-                var function = (Function) registry.read(identifier, scope);
-                var result = function.apply(args);
-                stack.push(result);
-            } finally {
-                detached.reattach();
+            var obj = registry.read(identifier, scope);
+            if (obj instanceof Function function) {
+                var detached = registry.detachScope(scope);
+                try {
+                    var result = function.apply(args);
+                    stack.push(result);
+                } finally {
+                    detached.reattach();
+                }
+            } else {
+                throw new SignalException.Throw(identifier.getSymbol(),
+                        "Expected function but was " + typeName(obj));
             }
+
         } catch (Exception e) {
             throw SignalException.wrap(ctx, e);
         }
