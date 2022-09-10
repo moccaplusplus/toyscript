@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,7 +22,7 @@ public class ToyScriptConsole {
     }
 
     private boolean interactive;
-    private String encoding;
+    private String encoding = "utf-8";
     private String path;
     private boolean help;
     private final ScriptEngine engine;
