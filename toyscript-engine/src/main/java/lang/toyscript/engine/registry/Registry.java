@@ -1,12 +1,11 @@
 package lang.toyscript.engine.registry;
 
+import lang.toyscript.engine.error.SignalException;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.script.ScriptContext;
-
-import static lang.toyscript.engine.type.TypeUtils.ensureType;
 
 public interface Registry {
 
@@ -30,33 +29,25 @@ public interface Registry {
         void reattach();
     }
 
-    void declare(TerminalNode id, Object value);
+    void declare(TerminalNode id, Object value) throws SignalException;
 
-    default void declare(TerminalNode id) {
+    default void declare(TerminalNode id) throws SignalException {
         declare(id, null);
     }
 
     Object read(TerminalNode id, int scope);
 
-    default <T> T read(TerminalNode id, int scope, Class<T> type) {
-        return ensureType(read(id, scope), type, id.getSymbol());
-    }
-
-    default Object read(TerminalNode id) {
+    default Object read(TerminalNode id) throws SignalException {
         return read(id, getDeclaringScope(id));
     }
 
-    default <T> T read(TerminalNode id, Class<T> type) {
-        return read(id, getDeclaringScope(id), type);
-    }
-
-    default void assign(TerminalNode id, Object value) {
+    default void assign(TerminalNode id, Object value) throws SignalException {
         assign(id, value, getDeclaringScope(id));
     }
 
     void assign(TerminalNode id, Object value, int scope);
 
-    int getDeclaringScope(TerminalNode id);
+    int getDeclaringScope(TerminalNode id) throws SignalException;
 
     int getCurrentScope();
 

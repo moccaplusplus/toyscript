@@ -24,7 +24,7 @@ public class ToyScriptEngineTest {
     public void shouldEvalSimpleScriptLeavingEmptyStack() throws ScriptException {
         // given
         var engineScope = objectUnderTest.getBindings(ScriptContext.ENGINE_SCOPE);
-        var expression = "var x = 123; x = 4 + x * 2;";
+        var expression = "var x = 123; { x = 4 + x * 2; }";
 
         // when
         var result = objectUnderTest.eval(expression);
@@ -41,7 +41,7 @@ public class ToyScriptEngineTest {
     public void shouldEvalSimpleScriptLeavingValueOnStack() throws ScriptException {
         // given
         var engineScope = objectUnderTest.getBindings(ScriptContext.ENGINE_SCOPE);
-        var expression = "var x = 123; x = 4 + x * 2 + 5; exit x;";
+        var expression = "var x = 123; x = 4 + x * 2 + 5;";
 
         // when
         var result = objectUnderTest.eval(expression);
@@ -133,7 +133,7 @@ public class ToyScriptEngineTest {
         var x = (Number) objectUnderTest.get("x");
 
         // then
-        assertThat(result).isNull();
+        assertThat(result).isNotNull().isEqualTo(6);
         assertThat(a).isEqualTo(7);
         assertThat(b).isEqualTo(2);
         assertThat(c).isEqualTo(null);

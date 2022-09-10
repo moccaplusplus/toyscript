@@ -1,4 +1,4 @@
-package lang.toyscript.engine.type;
+package lang.toyscript.engine.lib;
 
 import javax.script.ScriptContext;
 import java.io.BufferedReader;
@@ -11,47 +11,38 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static lang.toyscript.engine.visitor.TypeUtils.typeName;
+
 public interface StandardLib {
 
-    JavaCall readFile = new JavaCall("function(path)", args -> {
-        if (args.length == 0) throw new IllegalStateException("Path to file cannot be null");
+    JavaCall readFile = new JavaCall("path", args -> {
+        if (args[0] == null) throw new IllegalStateException("Path to file cannot be null");
         var path = Paths.get(String.valueOf(args[0]));
         var lines = Files.readAllLines(path);
         return String.join("\n", lines);
     });
 
-    JavaCall writeFile = new JavaCall("function(path, text)", args -> {
-        if (args.length == 0) throw new IllegalStateException("Path to file cannot be null");
-        if (args.length == 1) throw new IllegalStateException("Text to write cannot be null ");
+    JavaCall writeFile = new JavaCall(new String[]{"path, text"}, args -> {
+        if (args[0] == null) throw new IllegalStateException("Path to file cannot be null");
+        if (args[1] == null) throw new IllegalStateException("Text to write cannot be null ");
         var path = Paths.get(String.valueOf(args[0]));
         var text = String.valueOf(args[1]);
         Files.writeString(path, text);
         return null;
     });
 
-    JavaCall length = new JavaCall("function(arg)", args -> {
+    JavaCall length = new JavaCall("arg", args -> {
         if (args[0] instanceof List<?> list) return list.size();
         if (args[0] instanceof Map<?, ?> map) return map.size();
         if (args[0] instanceof String str) return str.length();
         return null;
     });
 
-    JavaCall typeof = new JavaCall("function(v)", args -> {
-        if (args.length == 0) return "null";
-        if (args[0] == null) return "null";
-        if (args[0] instanceof Boolean) return "boolean";
-        if (args[0] instanceof Integer) return "integer";
-        if (args[0] instanceof Float) return "float";
-        if (args[0] instanceof String) return "string";
-        if (args[0] instanceof List<?>) return "array";
-        if (args[0] instanceof Map<?, ?>) return "struct";
-        if (args[0] instanceof Function<?, ?>) return "function";
-        return "unknown";
-    });
+    JavaCall typeof = new JavaCall("obj", args -> typeName(args[0]));
 
-    JavaCall keys = new JavaCall("function(s)", args -> {
-        if (args.length > 0 && args[0] instanceof Map<?, ?> map) {
-            return map.keySet().stream().map(String::valueOf).toList();
+    JavaCall keys = new JavaCall("obj", args -> {
+        if (args[0] instanceof Map<?, ?> m) {
+            return m.keySet().stream().map(String::valueOf).toList();
         }
         return null;
     });

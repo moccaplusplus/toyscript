@@ -76,7 +76,7 @@ public class ToyScriptConsole {
                     writer.newLine();
                 }
             } catch (Exception e) {
-                writer.write("[ERROR: " + e.getClass().getSimpleName() + "] " + e.getMessage());
+                writer.write("ERROR: " + e.getMessage());
                 writer.newLine();
             }
             writer.flush();

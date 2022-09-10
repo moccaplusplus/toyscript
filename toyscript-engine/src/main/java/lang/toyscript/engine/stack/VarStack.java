@@ -34,4 +34,8 @@ public class VarStack {
     public boolean isEmpty() {
         return list.isEmpty();
     }
+
+    public void clear() {
+        list.clear();
+    }
 }

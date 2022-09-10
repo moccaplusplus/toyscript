@@ -1,6 +1,7 @@
 package lang.toyscript.engine;
 
-import lang.toyscript.engine.error.UncheckedScriptException;
+import lang.toyscript.engine.error.RuntimeScriptException;
+import lang.toyscript.engine.error.SignalException;
 import lang.toyscript.engine.visitor.ParseTreeVisitor;
 import lang.toyscript.parser.ToyScriptParser;
 
@@ -8,6 +9,8 @@ import javax.script.CompiledScript;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
+
+import static lang.toyscript.parser.ToyScriptLexer.ruleNames;
 
 public class ToyScriptProgram extends CompiledScript {
 
@@ -25,8 +28,13 @@ public class ToyScriptProgram extends CompiledScript {
         var visitor = ParseTreeVisitor.create(context);
         try {
             visitor.visit(tree);
-        } catch (UncheckedScriptException e) {
+        } catch (RuntimeScriptException e) {
             throw e.checked();
+        } catch (SignalException.Throw e) {
+            throw new ScriptException(String.valueOf(e.payload()), "script", e.line(), e.col());
+        } catch (SignalException e) {
+            throw new ScriptException(
+                    "Token <" + ruleNames[e.type()] + "> in illegal position", "script", e.line(), e.col());
         } catch (RuntimeException e) {
             throw new ScriptException(e);
         }

@@ -1,6 +1,6 @@
 package lang.toyscript.engine.registry;
 
-import lang.toyscript.engine.error.UncheckedScriptException;
+import lang.toyscript.engine.error.SignalException;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import javax.script.ScriptContext;
@@ -14,12 +14,12 @@ public class SimpleRegistry implements Registry {
     }
 
     @Override
-    public void declare(TerminalNode id, Object value) {
+    public void declare(TerminalNode id, Object value) throws SignalException {
         var bindings = scriptContext.getBindings(getCurrentScope());
         var name = id.getText();
         if (bindings.containsKey(name)) {
-            throw new UncheckedScriptException(
-                    "Identifier: " + name + " already declared in current scope", id.getSymbol());
+            throw new SignalException.Throw(id.getSymbol(),
+                    "Identifier " + name + " already declared in current scope");
         }
         bindings.put(name, null);
     }
@@ -37,11 +37,12 @@ public class SimpleRegistry implements Registry {
     }
 
     @Override
-    public int getDeclaringScope(TerminalNode id) {
+    public int getDeclaringScope(TerminalNode id) throws SignalException {
         var name = id.getText();
         var scope = scriptContext.getAttributesScope(name);
         if (scope == -1) {
-            throw new UncheckedScriptException("Identifier: " + name + " is not declared", id.getSymbol());
+            throw new SignalException.Throw(id.getSymbol(),
+                    "Identifier " + name + " is not declared");
         }
         return scope;
     }

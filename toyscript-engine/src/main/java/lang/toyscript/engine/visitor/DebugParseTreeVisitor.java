@@ -1,7 +1,6 @@
 package lang.toyscript.engine.visitor;
 
 import lang.toyscript.engine.registry.Registry;
-import lang.toyscript.engine.stack.PanicChannel;
 import lang.toyscript.engine.stack.VarStack;
 import lang.toyscript.parser.ToyScriptParser;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -10,8 +9,8 @@ import java.util.function.Function;
 
 public class DebugParseTreeVisitor extends ParseTreeVisitor {
 
-    DebugParseTreeVisitor(Registry registry, VarStack stack, PanicChannel panicChannel) {
-        super(registry, stack, panicChannel);
+    DebugParseTreeVisitor(Registry registry, VarStack stack) {
+        super(registry, stack);
     }
 
     @Override

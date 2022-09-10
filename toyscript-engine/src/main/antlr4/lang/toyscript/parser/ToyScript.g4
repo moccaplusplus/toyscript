@@ -37,30 +37,30 @@ statement:
     ;
 
 expr:
-        PAREN_L expr PAREN_R                                # NestedExpr
-    |   MINUS expr                                          # UnaryMinusExpr
-    |   NOT expr                                            # NegationExpr
-    |   ID op=( INCR | DECR )                               # IncrDecrExpr
-    |   expr DOT ID                                         # MemberAccessExpr
-    |   expr INDEX_L expr INDEX_R                           # IndexAccessExpr
-    |   ID PAREN_L ( expr (COMMA expr)* )? PAREN_R          # FunctionCallExpr
-    |   expr op=( MUL | DIV | MOD ) expr                    # MulDivModExpr
-    |   expr op=( PLUS | MINUS ) expr                       # AddSubExpr
-    |   expr op=( LT | LTE | GT | GTE ) expr                # CompareExpr
-    |   expr op=( EQ | NEQ ) expr                           # EqualCheckExpr
-    |   expr op=( AND | OR ) expr                           # AndOrExpr
-    |   STRUCT CURLY_L ( ID ASSIGN expr END )* CURLY_R      # StructInitExpr
-    |   ARRAY CURLY_L ( expr (COMMA expr)* )? CURLY_R       # ArrayInitExpr
-    |   ARRAY INDEX_L expr INDEX_R                          # ArrayDefExpr
-    |   BOOL                                                # BooleanLiteralExpr
-    |   FLOAT                                               # FloatLiteralExpr
-    |   INT                                                 # IntLiteralExpr
-    |   STRING                                              # StringLiteralExpr
-    |   NULL                                                # NullLiteralExpr
-    |   ID                                                  # VarExpr
-    |   expr DOT ID ASSIGN expr                             # MemberAssignExpr
-    |   expr INDEX_L expr INDEX_R ASSIGN expr               # IndexAssignExpr
-    |   ID ASSIGN expr                                      # AssignExpr
+        PAREN_L expr PAREN_R                                    # NestedExpr
+    |   MINUS expr                                              # UnaryMinusExpr
+    |   NOT expr                                                # NegationExpr
+    |   ID op=( INCR | DECR )                                   # IncrDecrExpr
+    |   expr DOT ID                                             # MemberAccessExpr
+    |   expr INDEX_L expr INDEX_R                               # IndexAccessExpr
+    |   ID PAREN_L ( expr (COMMA expr)* )? PAREN_R              # FunctionCallExpr
+    |   expr op=( MUL | DIV | MOD ) expr                        # MulDivModExpr
+    |   expr op=( PLUS | MINUS ) expr                           # AddSubExpr
+    |   expr op=( LT | LTE | GT | GTE ) expr                    # CompareExpr
+    |   expr op=( EQ | NEQ ) expr                               # EqualCheckExpr
+    |   expr op=( AND | OR ) expr                               # AndOrExpr
+    |   STRUCT CURLY_L ( ID ASSIGN expr END )* CURLY_R          # StructInitExpr
+    |   ARRAY CURLY_L ( expr (COMMA expr)* )? CURLY_R           # ArrayInitExpr
+    |   ARRAY INDEX_L expr INDEX_R                              # ArrayDefExpr
+    |   BOOL                                                    # BooleanLiteralExpr
+    |   FLOAT                                                   # FloatLiteralExpr
+    |   INT                                                     # IntLiteralExpr
+    |   STRING                                                  # StringLiteralExpr
+    |   NULL                                                    # NullLiteralExpr
+    |   ID                                                      # VarExpr
+    |   <assoc=right> expr DOT ID ASSIGN expr                   # MemberAssignExpr
+    |   <assoc=right> expr INDEX_L expr INDEX_R ASSIGN expr     # IndexAssignExpr
+    |   <assoc=right> ID ASSIGN expr                            # AssignExpr
     ;
 
 VAR: 'var';
