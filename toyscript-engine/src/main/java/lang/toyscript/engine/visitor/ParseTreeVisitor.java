@@ -1,14 +1,13 @@
 package lang.toyscript.engine.visitor;
 
 import lang.toyscript.engine.error.SignalException;
-import lang.toyscript.engine.registry.Registry;
+import lang.toyscript.engine.registry.Scope;
 import lang.toyscript.engine.stack.VarStack;
 import lang.toyscript.parser.ToyScriptLexer;
 import lang.toyscript.parser.ToyScriptParser;
 import lang.toyscript.parser.ToyScriptVisitor;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.TerminalNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,22 +39,22 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
     static final Logger LOGGER = LoggerFactory.getLogger(ParseTreeVisitor.class);
 
     public static ParseTreeVisitor create(ScriptContext scriptContext) {
-        var registry = Registry.scoped(scriptContext);
         var stack = VarStack.create();
+        var scope = Scope.root(scriptContext);
         return LOGGER.isDebugEnabled() ?
-                new DebugParseTreeVisitor(registry, stack) :
-                new ParseTreeVisitor(registry, stack);
+                new DebugParseTreeVisitor(stack, scope) :
+                new ParseTreeVisitor(stack, scope);
     }
 
     private final VarStack stack;
 
-    private final Registry registry;
+    private Scope scope;
 
     private boolean lastStatement;
 
-    ParseTreeVisitor(Registry registry, VarStack stack) {
+    ParseTreeVisitor(VarStack stack, Scope scope) {
         this.stack = stack;
-        this.registry = registry;
+        this.scope = scope;
     }
 
     @Override
@@ -249,24 +248,24 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
     @Override
     public Void visitVarDecl(ToyScriptParser.VarDeclContext ctx) {
         var identifier = ctx.ID();
-        Object value = null;
+        scope.declare(identifier);
         if (ctx.expr() != null) {
             visit(ctx.expr());
-            value = stack.pop();
+            var value = stack.pop();
+            scope.write(identifier, value);
         }
-        registry.declare(identifier, value);
         return null;
     }
 
     @Override
     public Void visitBlockStatement(ToyScriptParser.BlockStatementContext ctx) {
-        registry.enterScope();
+        scope = scope.createChild();
         try {
             for (var statement : ctx.statement()) {
                 visit(statement);
             }
         } finally {
-            registry.exitScope();
+            scope = scope.getParent();
         }
         return null;
     }
@@ -353,36 +352,27 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
 
     @Override
     public Void visitAssignExpr(ToyScriptParser.AssignExprContext ctx) {
-        try {
-            var identifier = ctx.ID();
-            var scope = registry.getDeclaringScope(identifier);
-            visit(ctx.expr());
-            var value = stack.pop();
-            registry.assign(identifier, value, scope);
-            stack.push(value);
-        } catch (Exception e) {
-            throw SignalException.wrap(ctx, e);
-        }
+        var identifier = ctx.ID();
+        var scopeRef = scope.getDeclaringScope(identifier);
+        visit(ctx.expr());
+        var value = stack.pop();
+        scopeRef.write(identifier, value);
+        stack.push(value);
         return null;
     }
 
     @Override
     public Void visitIncrDecrExpr(ToyScriptParser.IncrDecrExprContext ctx) {
-        try {
-            var identifier = ctx.ID();
-            var scope = registry.getDeclaringScope(identifier);
-            var value = registry.read(identifier, scope);
-            stack.push(value);
-            value = switch (ctx.op.getType()) {
-                case ToyScriptLexer.INCR -> numberCast(value).intValue() + 1;
-                case ToyScriptLexer.DECR -> numberCast(value).intValue() - 1;
-                default -> unexpectedToken(ctx.op);
-            };
-            registry.assign(identifier, value, scope);
-
-        } catch (Exception e) {
-            throw SignalException.wrap(ctx, e);
-        }
+        var identifier = ctx.ID();
+        var scopeRef = scope.getDeclaringScope(identifier);
+        var value = scopeRef.read(identifier);
+        stack.push(value);
+        value = switch (ctx.op.getType()) {
+            case ToyScriptLexer.INCR -> numberCast(value).intValue() + 1;
+            case ToyScriptLexer.DECR -> numberCast(value).intValue() - 1;
+            default -> unexpectedToken(ctx.op);
+        };
+        scopeRef.write(identifier, value);
         return null;
     }
 
@@ -464,7 +454,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
     @Override
     public Void visitVarExpr(ToyScriptParser.VarExprContext ctx) {
         var identifier = ctx.ID();
-        var value = registry.read(identifier);
+        var value = scope.read(identifier);
         stack.push(value);
         return null;
     }
@@ -511,52 +501,50 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public Void visitFunctionCallExpr(ToyScriptParser.FunctionCallExprContext ctx) {
-        try {
-            var identifier = ctx.ID();
-            var scope = registry.getDeclaringScope(identifier);
+        var identifier = ctx.ID();
 
-            var count = ctx.expr().size();
-            var args = new Object[count];
-            for (var i = 0; i < count; i++) {
-                visit(ctx.expr(i));
-                args[i] = stack.pop();
+        var count = ctx.expr().size();
+        var args = new Object[count];
+        for (var i = 0; i < count; i++) {
+            visit(ctx.expr(i));
+            args[i] = stack.pop();
+        }
+
+        var obj = scope.read(identifier);
+        if (obj instanceof Function function) {
+            try {
+                var result = function.apply(args);
+                stack.push(result);
+            } catch (Exception e) {
+                throw SignalException.wrap(ctx, e);
             }
-
-            var obj = registry.read(identifier, scope);
-            if (obj instanceof Function function) {
-                var detached = registry.detachScope(scope);
-                try {
-                    var result = function.apply(args);
-                    stack.push(result);
-                } finally {
-                    detached.reattach();
-                }
-            } else {
-                throw new SignalException.Throw(identifier.getSymbol(),
-                        "Expected function but was " + typeName(obj));
-            }
-
-        } catch (Exception e) {
-            throw SignalException.wrap(ctx, e);
+        } else {
+            throw new SignalException.Throw(identifier.getSymbol(),
+                    "Expected function but was " + typeName(obj));
         }
         return null;
     }
 
     @Override
     public Void visitFunctionDecl(ToyScriptParser.FunctionDeclContext ctx) {
-        var function = new Function<Object[], Object>() {
 
-            private final List<TerminalNode> params = ctx.ID().subList(1, ctx.ID().size());
+        var identifier = ctx.ID().get(0);
+        var params = ctx.ID().subList(1, ctx.ID().size());
+        var enclosingScope = scope;
+
+        scope.declare(identifier, new Function<Object[], Object>() {
 
             @Override
             public Object apply(Object[] args) {
-                registry.enterScope();
+
+                var callerScope = scope;
+                scope = enclosingScope.createChild();
+
                 try {
-                    var scope = registry.getCurrentScope();
                     var limit = Math.min(params.size(), args.length);
                     var i = 0;
-                    for (; i < limit; i++) registry.assign(params.get(i), args[i], scope);
-                    for (; i < params.size(); i++) registry.assign(params.get(i), null, scope);
+                    for (; i < limit; i++) scope.declare(params.get(i), args[i]);
+                    for (; i < params.size(); i++) scope.declare(params.get(i));
                     for (var statement : ctx.statement()) {
                         try {
                             visit(statement);
@@ -566,7 +554,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
                     }
                     return null;
                 } finally {
-                    registry.exitScope();
+                    scope = callerScope;
                 }
             }
 
@@ -574,10 +562,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
             public String toString() {
                 return "function(" + params.stream().map(ParseTree::getText).collect(joining(", ")) + ")";
             }
-        };
-
-        var identifier = ctx.ID().get(0);
-        registry.declare(identifier, function);
+        });
 
         return null;
     }
@@ -587,19 +572,18 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
         try {
             visit(ctx.blockStatement());
         } catch (SignalException.Throw e) {
-            registry.enterScope();
+            scope = scope.createChild();
             try {
                 stack.clear();
-                var scope = registry.getCurrentScope();
                 var errId = ctx.ID();
                 if (errId != null) {
-                    registry.assign(errId, e.payload(), scope);
+                    scope.declare(errId, e.payload());
                 }
                 for (var statement : ctx.statement()) {
                     visit(statement);
                 }
             } finally {
-                registry.exitScope();
+                scope = scope.getParent();
             }
         }
         return null;
