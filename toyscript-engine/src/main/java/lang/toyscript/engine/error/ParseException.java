@@ -1,7 +1,5 @@
 package lang.toyscript.engine.error;
 
-import org.antlr.v4.runtime.Token;
-
 import javax.script.ScriptException;
 
 public class ParseException extends RuntimeException {

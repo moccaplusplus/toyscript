@@ -21,18 +21,18 @@ import java.util.function.Function;
 
 import static java.util.stream.Collectors.joining;
 import static lang.toyscript.engine.error.ScriptError.unexpectedToken;
-import static lang.toyscript.engine.visitor.TypeUtils.addExpr;
-import static lang.toyscript.engine.visitor.TypeUtils.boolCast;
-import static lang.toyscript.engine.visitor.TypeUtils.divideExpr;
-import static lang.toyscript.engine.visitor.TypeUtils.equalsExpr;
-import static lang.toyscript.engine.visitor.TypeUtils.greaterThenExpr;
-import static lang.toyscript.engine.visitor.TypeUtils.lessThenExpr;
-import static lang.toyscript.engine.visitor.TypeUtils.moduloExpr;
-import static lang.toyscript.engine.visitor.TypeUtils.multiplyExpr;
-import static lang.toyscript.engine.visitor.TypeUtils.numberCast;
-import static lang.toyscript.engine.visitor.TypeUtils.subtractExpr;
-import static lang.toyscript.engine.visitor.TypeUtils.typeName;
-import static lang.toyscript.engine.visitor.TypeUtils.unaryMinExpr;
+import static lang.toyscript.engine.visitor.Types.addExpr;
+import static lang.toyscript.engine.visitor.Types.boolCast;
+import static lang.toyscript.engine.visitor.Types.divideExpr;
+import static lang.toyscript.engine.visitor.Types.ensureStructKey;
+import static lang.toyscript.engine.visitor.Types.equalsExpr;
+import static lang.toyscript.engine.visitor.Types.greaterThenExpr;
+import static lang.toyscript.engine.visitor.Types.lessThenExpr;
+import static lang.toyscript.engine.visitor.Types.moduloExpr;
+import static lang.toyscript.engine.visitor.Types.multiplyExpr;
+import static lang.toyscript.engine.visitor.Types.numberCast;
+import static lang.toyscript.engine.visitor.Types.subtractExpr;
+import static lang.toyscript.engine.visitor.Types.unaryMinExpr;
 
 public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements ToyScriptVisitor<Void> {
 
@@ -59,7 +59,6 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
 
     @Override
     public Void visitProgram(ToyScriptParser.ProgramContext ctx) {
-
         for (int i = 0, count = ctx.statement().size(); i < count; i++) {
             var statement = ctx.statement(i);
             lastStatement = i == count - 1 && statement.exprStatement() != null;
@@ -126,8 +125,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
                 var value = String.valueOf(str.charAt(index));
                 stack.push(value);
             } else {
-                throw new SignalException.Throw(arrExpr.getStart(),
-                        "Expected array or string but was " + typeName(obj));
+                throw SignalException.typeMismatch(obj, arrExpr.getStart(), List.class, String.class);
             }
         } catch (Exception e) {
             throw SignalException.wrap(ctx, e);
@@ -159,8 +157,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
                 throw SignalException.wrap(ctx, e);
             }
         } else {
-            throw new SignalException.Throw(
-                    arrExpr.getStart(), "Expected array but was " + typeName(obj));
+            throw SignalException.typeMismatch(obj, arrExpr.getStart(), List.class);
         }
         return null;
     }
@@ -172,11 +169,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
         var obj = stack.pop();
 
         if (obj instanceof Map<?, ?> map) {
-            var key = ctx.ID().getText();
-            if (!map.containsKey(key)) {
-                throw new SignalException.Throw(ctx.ID().getSymbol(),
-                        "Member " + key + " not found");
-            }
+            var key = ensureStructKey(map, ctx.ID());
             try {
                 var value = map.get(key);
                 stack.push(value);
@@ -184,8 +177,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
                 throw SignalException.wrap(ctx, e);
             }
         } else {
-            throw new SignalException.Throw(mapExpr.getStart(),
-                    "Expected struct but was " + typeName(obj));
+            throw SignalException.typeMismatch(obj, mapExpr.getStart(), Map.class);
         }
         return null;
     }
@@ -203,11 +195,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
         var value = stack.pop();
 
         if (obj instanceof Map map) {
-            var key = ctx.ID().getText();
-            if (!map.containsKey(key)) {
-                throw new SignalException.Throw(
-                        ctx.ID().getSymbol(), "Member " + key + " not found");
-            }
+            var key = ensureStructKey(map, ctx.ID());
             try {
                 map.put(key, value);
                 stack.push(value);
@@ -215,8 +203,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
                 throw SignalException.wrap(ctx, e);
             }
         } else {
-            throw new SignalException.Throw(mapExpr.getStart(),
-                    "Expected struct but was " + typeName(obj));
+            throw SignalException.typeMismatch(obj, mapExpr.getStart(), Map.class);
         }
 
         return null;
@@ -248,12 +235,12 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
     @Override
     public Void visitVarDecl(ToyScriptParser.VarDeclContext ctx) {
         var identifier = ctx.ID();
-        scope.declare(identifier);
+        Object value = null;
         if (ctx.expr() != null) {
             visit(ctx.expr());
-            var value = stack.pop();
-            scope.write(identifier, value);
+            value = stack.pop();
         }
+        scope.declare(identifier, value);
         return null;
     }
 
@@ -316,7 +303,6 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
 
     @Override
     public Void visitExprStatement(ToyScriptParser.ExprStatementContext ctx) {
-        ctx.END();
         visit(ctx.expr());
 
         // clear stack after standalone expression -
@@ -452,9 +438,13 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
     }
 
     @Override
-    public Void visitVarExpr(ToyScriptParser.VarExprContext ctx) {
+    public Void visitIdentifierExpr(ToyScriptParser.IdentifierExprContext ctx) {
         var identifier = ctx.ID();
         var value = scope.read(identifier);
+        if (value instanceof Function<?, ?>) {
+            throw new SignalException.Throw(identifier.getSymbol(),
+                    "Function reference cannot be used in expression");
+        }
         stack.push(value);
         return null;
     }
@@ -519,8 +509,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
                 throw SignalException.wrap(ctx, e);
             }
         } else {
-            throw new SignalException.Throw(identifier.getSymbol(),
-                    "Expected function but was " + typeName(obj));
+            throw SignalException.typeMismatch(obj, identifier.getSymbol(), Function.class);
         }
         return null;
     }
@@ -530,6 +519,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
 
         var identifier = ctx.ID().get(0);
         var params = ctx.ID().subList(1, ctx.ID().size());
+        var signature = "function(" + params.stream().map(ParseTree::getText).collect(joining(", ")) + ")";
         var enclosingScope = scope;
 
         scope.declare(identifier, new Function<Object[], Object>() {
@@ -560,7 +550,7 @@ public class ParseTreeVisitor extends AbstractParseTreeVisitor<Void> implements 
 
             @Override
             public String toString() {
-                return "function(" + params.stream().map(ParseTree::getText).collect(joining(", ")) + ")";
+                return signature;
             }
         });
 

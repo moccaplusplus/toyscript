@@ -1,19 +1,39 @@
 package lang.toyscript.engine.error;
 
+import lang.toyscript.engine.visitor.Types;
 import lang.toyscript.parser.ToyScriptLexer;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 
 import javax.script.ScriptException;
+import java.util.Arrays;
 
-import static lang.toyscript.engine.visitor.TypeUtils.errorMsg;
+import static java.util.stream.Collectors.joining;
+import static lang.toyscript.engine.visitor.Types.errorMsg;
+import static lang.toyscript.engine.visitor.Types.typeName;
 import static lang.toyscript.parser.ToyScriptLexer.ruleNames;
 
 public class SignalException extends RuntimeException {
 
     public static SignalException wrap(ParserRuleContext ctx, Exception e) {
+        return wrap(ctx.getStart(), e);
+    }
+
+    public static SignalException wrap(Token pos, Exception e) {
         return e instanceof SignalException se ?
-                se : new SignalException.Throw(ctx.getStart(), errorMsg(e));
+                se : new SignalException.Throw(pos, errorMsg(e));
+    }
+
+    public static SignalException typeMismatch(Object value, Token pos, Class<?>... expected) {
+        return new SignalException.Throw(pos, "Expected " +
+                Arrays.stream(expected).map(Types::typeName)
+                        .map(String::valueOf).collect(joining(", ")) +
+                " but was " + Types.typeName(value));
+    }
+
+    public static SignalException typeMismatch(Object value, Token pos, Class<?> expected) {
+        return new SignalException.Throw(pos, "Expected " + typeName(expected) +
+                " but was " + Types.typeName(value));
     }
 
     public static class Throw extends SignalException {

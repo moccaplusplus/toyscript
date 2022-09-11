@@ -1,5 +1,7 @@
 package lang.toyscript.engine.lib;
 
+import lang.toyscript.engine.visitor.Types;
+
 import javax.script.ScriptContext;
 import java.io.BufferedReader;
 import java.io.Reader;
@@ -11,7 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import static lang.toyscript.engine.visitor.TypeUtils.typeName;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
+import static lang.toyscript.engine.visitor.Types.typeNames;
 
 public interface StandardLib {
 
@@ -37,8 +41,6 @@ public interface StandardLib {
         if (args[0] instanceof String str) return str.length();
         return null;
     });
-
-    JavaFunctionCall typeof = new JavaFunctionCall("obj", args -> typeName(args[0]));
 
     JavaFunctionCall keys = new JavaFunctionCall("obj", args -> {
         if (args[0] instanceof Map<?, ?> m) {
@@ -73,8 +75,9 @@ public interface StandardLib {
         m.put("readFile", readFile);
         m.put("writeFile", writeFile);
         m.put("length", length);
-        m.put("typeof", typeof);
         m.put("keys", keys);
+        m.put("typeof", new JavaFunctionCall("obj", args -> Types.typeName(args[0])));
+        m.put("Types", typeNames().stream().collect(toMap(String::toUpperCase, identity())));
         return m;
     }
 }

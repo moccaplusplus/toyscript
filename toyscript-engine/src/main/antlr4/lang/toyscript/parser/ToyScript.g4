@@ -14,9 +14,9 @@ tryStatement: TRY blockStatement CATCH (PAREN_L ID PAREN_R)? CURLY_L statement* 
 
 throwStatement: THROW expr? END;
 
-loopExitClause: op=(BREAK | CONTINUE) END;
-
 returnExitClause: op=(RETURN | EXIT) expr? END;
+
+loopExitClause: op=(BREAK | CONTINUE) END;
 
 exprStatement: expr END;
 
@@ -30,9 +30,9 @@ statement:
     |   tryStatement
     |   throwStatement
     |   returnExitClause
+    |   loopExitClause
     |   exprStatement
     |   blockStatement
-    |   loopExitClause
     |   END
     ;
 
@@ -57,7 +57,7 @@ expr:
     |   INT                                                     # IntLiteralExpr
     |   STRING                                                  # StringLiteralExpr
     |   NULL                                                    # NullLiteralExpr
-    |   ID                                                      # VarExpr
+    |   ID                                                      # IdentifierExpr
     |   <assoc=right> expr DOT ID ASSIGN expr                   # MemberAssignExpr
     |   <assoc=right> expr INDEX_L expr INDEX_R ASSIGN expr     # IndexAssignExpr
     |   <assoc=right> ID ASSIGN expr                            # AssignExpr
@@ -86,6 +86,7 @@ CURLY_L: '{';
 CURLY_R: '}';
 INDEX_L: '[';
 INDEX_R: ']';
+
 ASSIGN: '=';
 DOT: '.';
 
@@ -108,17 +109,16 @@ AND: '&&';
 OR: '||';
 NOT: '!';
 
-NULL: 'null';
-
-BOOL: 'true' | 'false';
 INT: [0-9]+;
 FLOAT: [0-9]+ '.' [0-9]*;
+
+NULL: 'null';
+BOOL: 'true' | 'false';
 
 ID: [a-zA-Z_][a-zA-Z0-9_]*;
 
 STRING:  '"' ( ESC_CHAR | ~('\\'|'"') )* '"';
-CHAR:'\'' ( ESC_CHAR | ~('\''|'\\') ) '\'';
-ESC_CHAR: '\\' ('b'|'t'|'n'|'f'|'r'|'"'|'\''|'\\');
+fragment ESC_CHAR: '\\' ('b'|'t'|'n'|'f'|'r'|'"'|'\''|'\\');
 
 COMMENT: ( '//' ~[\r\n]* | '/*' .*? '*/' ) -> skip;
 WS: [ \t\r\n]+ -> skip;

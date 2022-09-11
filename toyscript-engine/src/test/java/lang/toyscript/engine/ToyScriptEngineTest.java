@@ -4,16 +4,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.script.ScriptContext;
+import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 public class ToyScriptEngineTest {
 
-    public ToyScriptEngine objectUnderTest;
+    public ScriptEngine objectUnderTest;
 
     @BeforeEach
     public void beforeEach() {
@@ -25,6 +27,7 @@ public class ToyScriptEngineTest {
         // given
         var engineScope = objectUnderTest.getBindings(ScriptContext.ENGINE_SCOPE);
         var expression = "var x = 123; { x = 4 + x * 2; }";
+
 
         // when
         var result = objectUnderTest.eval(expression);
@@ -300,6 +303,60 @@ public class ToyScriptEngineTest {
         // then
         assertThat(objectUnderTest.get("found")).isEqualTo(7);
         assertThat(objectUnderTest.get("notFound")).isEqualTo(-11);
+    }
+
+    @Test
+    public void shouldNotCatchSyntaxErrors() {
+        // given
+        var badSyntaxExpr = List.of(
+                "var a() = 0;",
+                "var a = 0",
+                "b = 0",
+                "struct { a = x }",
+                "function () {}",
+                "function x {}");
+
+        // when
+        var errors = badSyntaxExpr.stream()
+                .map(expr -> catchThrowableOfType(
+                        () -> objectUnderTest.eval("try { " + expr + " } catch {}"),
+                        ScriptException.class))
+                .map(ScriptException::getMessage)
+                .toList();
+
+        // then
+        assertThat(errors).containsExactly(
+                "mismatched input '(' expecting {';', '='} in script at line number 1 at column number 11",
+                "missing ';' at '}' in script at line number 1 at column number 16",
+                "missing ';' at '}' in script at line number 1 at column number 12",
+                "missing ';' at '}' in script at line number 1 at column number 21",
+                "missing ID at '(' in script at line number 1 at column number 15",
+                "mismatched input '{' expecting '(' in script at line number 1 at column number 17");
+    }
+
+    @Test
+    public void shouldCatchSemanticErrors() throws ScriptException {
+        // given
+        var badSemanticExpr = List.of(
+                "var a = b;",
+                "a = b;",
+                "var a = 0; a();",
+                "(struct { a = 1; }).b;",
+                "function f() {}; var b = f;");
+
+        // when
+        objectUnderTest.eval("var i = 0; var errors = array[" + badSemanticExpr.size() + "];");
+        for (var expr : badSemanticExpr) {
+            objectUnderTest.eval("try { " + expr + " } catch (e) { errors[i++] = e; }");
+        }
+
+        // then
+        assertThat(objectUnderTest.get("errors")).isEqualTo(List.of(
+                "Identifier b is not declared",
+                "Identifier a is not declared",
+                "Expected function but was integer",
+                "Member b not found",
+                "Function reference cannot be used in expression"));
     }
 
     private static BufferedReader resourceFileReader(String path) {

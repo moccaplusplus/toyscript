@@ -5,7 +5,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static lang.toyscript.engine.visitor.TypeUtils.ellipsize;
+import static lang.toyscript.engine.visitor.Types.ellipsize;
 
 public class DebugScope extends Scope {
 

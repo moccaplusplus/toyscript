@@ -1,5 +1,7 @@
 package lang.toyscript.console;
 
+import lang.toyscript.engine.visitor.Types;
+
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -7,7 +9,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,7 +53,9 @@ public class ToyScriptConsole {
     }
 
     private void execute(Path path, Charset charset) throws IOException, ScriptException {
-        engine.eval(Files.newBufferedReader(path, charset));
+        var result = engine.eval(Files.newBufferedReader(path, charset));
+        var exitCode = Types.numberCast(result).intValue();
+        System.exit(exitCode);
     }
 
     private void consoleLoop() throws IOException {

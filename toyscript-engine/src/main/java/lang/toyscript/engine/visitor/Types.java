@@ -1,24 +1,47 @@
 package lang.toyscript.engine.visitor;
 
+import lang.toyscript.engine.error.SignalException;
+import org.antlr.v4.runtime.tree.TerminalNode;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-public interface TypeUtils {
+public interface Types {
+
+    String VOID = "void";
+    String BOOLEAN = "boolean";
+    String INTEGER = "integer";
+    String FLOAT = "float";
+    String STRING = "string";
+    String ARRAY = "array";
+    String STRUCT = "struct";
+    String FUNCTION = "function";
+    String NATIVE = "native";
+
+    static List<String> typeNames() {
+        return List.of(VOID, BOOLEAN, INTEGER, FLOAT, STRING, ARRAY, STRUCT, FUNCTION, NATIVE);
+    }
 
     static String typeName(Object obj) {
-        return obj == null ? "null" : typeName(obj.getClass());
+        return obj == null ? VOID : typeName(obj.getClass());
     }
 
     static String typeName(Class<?> type) {
-        if (Boolean.class.isAssignableFrom(type)) return "boolean";
-        if (Integer.class.isAssignableFrom(type)) return "integer";
-        if (Float.class.isAssignableFrom(type)) return "float";
-        if (String.class.isAssignableFrom(type)) return "string";
-        if (List.class.isAssignableFrom(type)) return "array";
-        if (Map.class.isAssignableFrom(type)) return "struct";
-        if (Function.class.isAssignableFrom(type)) return "function";
-        return "unknown";
+        if (Boolean.class.isAssignableFrom(type)) return BOOLEAN;
+        if (Integer.class.isAssignableFrom(type)) return INTEGER;
+        if (Float.class.isAssignableFrom(type)) return FLOAT;
+        if (String.class.isAssignableFrom(type)) return STRING;
+        if (List.class.isAssignableFrom(type)) return ARRAY;
+        if (Map.class.isAssignableFrom(type)) return STRUCT;
+        if (Function.class.isAssignableFrom(type)) return FUNCTION;
+        return NATIVE;
+    }
+
+    static String ensureStructKey(Map<?, ?> struct, TerminalNode id) {
+        var key = id.getText();
+        if (struct.containsKey(key)) return key;
+        throw new SignalException.Throw(id.getSymbol(), "Member " + key + " not found");
     }
 
     static Object addExpr(Object o1, Object o2) {

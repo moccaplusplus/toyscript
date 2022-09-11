@@ -149,8 +149,8 @@ public class DebugParseTreeVisitor extends ParseTreeVisitor {
     }
 
     @Override
-    public Void visitVarExpr(ToyScriptParser.VarExprContext ctx) {
-        return logVisit("varExpr", super::visitVarExpr, ctx);
+    public Void visitIdentifierExpr(ToyScriptParser.IdentifierExprContext ctx) {
+        return logVisit("varExpr", super::visitIdentifierExpr, ctx);
     }
 
     @Override
