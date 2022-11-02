@@ -2,43 +2,64 @@ package lang.toyscript.engine;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
+import java.io.IOException;
 import java.util.List;
+import java.util.Properties;
+import java.util.stream.Stream;
 
 public class ToyScriptEngineFactory implements ScriptEngineFactory {
 
+    private final List<String> names;
+    private final String version;
+    private final List<String> extensions;
+    private final List<String> mimeTypes;
+
+    public ToyScriptEngineFactory() {
+        var properties = new Properties();
+        try {
+            properties.load(ToyScriptEngineFactory.class.getResourceAsStream("/toyscript.properties"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        names = Stream.of(properties.getProperty("toyscript.names").split(",")).map(String::trim).toList();
+        version = properties.getProperty("toyscript.version");
+        extensions = List.of(properties.getProperty("toyscript.extension"));
+        mimeTypes = List.of(properties.getProperty("toyscript.mimetype"));
+    }
+
     @Override
     public String getEngineName() {
-        return "ToyScript";
+        return getNames().get(0);
     }
 
     @Override
     public String getEngineVersion() {
-        return "1.0-alpha";
+        return version;
     }
 
     @Override
     public List<String> getExtensions() {
-        return List.of(".toys");
+        return extensions;
     }
 
     @Override
     public List<String> getMimeTypes() {
-        return List.of("application/vnd.lang.toyscript");
+        return mimeTypes;
     }
 
     @Override
     public List<String> getNames() {
-        return List.of("ToyScript", "toyscript", "toys");
+        return names;
     }
 
     @Override
     public String getLanguageName() {
-        return "toyscript";
+        return getNames().get(0);
     }
 
     @Override
     public String getLanguageVersion() {
-        return "1.0";
+        return version;
     }
 
     @Override
